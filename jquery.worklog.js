@@ -59,6 +59,7 @@
             this.setAutoSuggestLines();
             this.createTextArea();
             this.loadLog();
+            this.lineHeight =parseInt(this.$worklog.css("height").replace('px', ''), 10)/this.$worklog.data("linesArray").length;
             if (debug) console.log(this)
         },
         setAutoSuggestLines: function () {
