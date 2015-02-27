@@ -79,6 +79,9 @@
 				// if( $(this).prop( 'tagName' ).toUpperCase() === 'INPUT' )
 				// 	shadow.text(val).css( "width", "auto" );
 				// else
+                if (val === "") {
+                    val = "<br/>";   
+                }
 				shadow.html( val ).css( "width", "auto" ); // need to use html here otherwise no way to count spaces (with html we can use &nbsp;)
 				
 				if( options.horizontal )

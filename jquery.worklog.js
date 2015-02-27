@@ -25,25 +25,12 @@
             // These are the defaults.
             width: "650px",
             height: "200px",
-            background: "rgba(255,255,255,0.8)",
-            format: "html",
-            titleColor: "#000000",
-            template: {
-                name: "Default",
-                firstLineTitle: true,
-                sections: [ 
-                    ['Section 1 Header', 'Section 1 line 1', 'Section 1 line 2'],
-                    ['Section 2 Header', 'Section 2 line 1', 'Section 2 line 2']
-                ],
-                sig: "here"
-            },
-            autoSuggest: [
-                {"line":"Section 1 line 1 suggestion 1 ","count":1,"lastUsed":0},
-                {"line":"Section 1 line 1 suggestion 2 ","count":1,"lastUsed":0},
-                {"line":"Section 1 line 2 suggestion 1 ","count":1,"lastUsed":0},
-                {"line":"Section 1 line 2 noodles ","count":1,"lastUsed":0},
-                {"line":"Section 1 line 2 dragon ","count":1,"lastUsed":0}
-            ],
+            background: "#FFF",
+            format: "plain",
+            titleColor: "#000",
+            fixMinHeight: true,
+            template: false,
+            autoSuggest: false,
             autoFocus: false,
             suggestLength: 24
         };
@@ -51,7 +38,6 @@
     // The actual plugin constructor
     function Plugin( element, options ) {
         this.element = element;
-        //this.dom = $(element);
         // jQuery has an extend method which merges the contents of two or
         // more objects, storing the result in the first object. The first object
         // is generally empty as we don't want to alter the default options for
@@ -75,36 +61,43 @@
             this.setAutoSuggestLines();
             this.createTextArea();
             this.loadLog();
-            this.lineHeight = parseInt(this.$worklog.css("height"), 10)/this.$worklog.data("linesArray").length;
+            
+            this.lineHeight = parseInt(this.$worklog.css("height"), 10)/(this.$worklog.data("linesArray").length || 1);
             if (debug) console.log(this)
         },
         setAutoSuggestLines: function () {
             if (debug) console.log("setAutoSuggestLines");
             //this.autoSuggestLines = new Array();
-            var that = this;
-            $.each(this.options.autoSuggest, function (index, value){
-                //console.log(that);
-                that.autoSuggestLines.push(value.line);
-            });
+            if (this.options.autoSuggest) {
+                var that = this;
+                $.each(this.options.autoSuggest, function (index, value){
+                    //console.log(that);
+                    that.autoSuggestLines.push(value.line);
+                });
+            }
         },
-        checkCursorPosition: function (obj) {
+        checkCursorPosition: function (that) {
             if (debug) console.log("checkCursorPosition");
-            if (obj.$worklog != null) {
-                var t = obj.$worklog[0];
+            if (that.$worklog != null) {
+                var t = that.$worklog[0];
                 var tArray = t.value.split("\n");
                 var position = t.value.substr(0, t.selectionStart).split("\n").length - 1;
                 var autocompletePos;
-                if (position !== obj.currLine) {
+                if (position !== that.currLine) {
                     if (debug) console.log(position);
-                    obj.currLine = position;
-                    autocompletePos = parseInt(obj.$worklog.css("padding-top"), 10) + ((obj.currLine+1) *  obj.lineHeight);
-                    obj.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
-                } else if (tArray[position] !== obj.$worklog.data("linesArray")[position]) {
+                    that.currLine = position;
+                    autocompletePos = parseInt(that.$worklog.css("padding-top"), 10) + ((that.currLine+1) *  that.lineHeight);
+                    if (that.options.autoSuggest) {
+                        that.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
+                    }
+                } else if (tArray[position] !== that.$worklog.data("linesArray")[position]) {
                     if (debug) console.log(tArray[position]);
-                    obj.$worklog.data("linesArray", t.value.split("\n"));
-                    autocompletePos = parseInt(obj.$worklog.css("padding-top"), 10) + ((obj.currLine+1) *  obj.lineHeight);
+                    that.$worklog.data("linesArray", t.value.split("\n"));
+                    autocompletePos = parseInt(that.$worklog.css("padding-top"), 10) + ((that.currLine+1) *  that.lineHeight);
                     console.log(autocompletePos);
-                    obj.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
+                    if (that.options.autoSuggest) {
+                        that.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
+                    }
                 }
                 return position;
             } else {
@@ -114,8 +107,13 @@
         createTextArea: function () {
             if (debug) console.log("createTextArea");
             var that = this;
-            $(this.element).html("<b>" + this.options.template.name + '</b><br><textarea class="worklog" autofocus="false"></textarea>');
+            var templateHtml = '';
+            if (this.options.template) {
+                templateHtml += "<b>" + this.options.template.name + '</b><br>';
+            }
+            $(this.element).html(templateHtml + '<textarea class="worklog" autofocus="false"></textarea>');
             this.$worklog = $('textarea', $(this.element));
+            this.$worklog.data("linesArray", []);
             this.$worklog.css({
                 width: this.options.width,
                 height: this.options.height,
@@ -123,13 +121,11 @@
                 resize: 'none'
             }).attr({
                 minWidth: this.options.width
-            })
-            .autogrow({
+            }).autogrow({
                 vertical : true,
                 horizontal : true,
-                fixMinHeight: false
-            })
-            .focus(function () {
+                fixMinHeight: this.fixMinHeight
+            }).focus(function () {
                 that.checkInterval = setInterval(that.checkCursorPosition, 250, that);
             }).blur(function () {
                 clearInterval(that.checkInterval);
@@ -138,89 +134,94 @@
                 if (event.keyCode == keyCode.UP || event.keyCode == keyCode.DOWN) {
                       event.stopImmediatePropagation();
                 }
-            }).autocomplete({
-                source: function (request, response) {
-                    var term = request.term.trim();
-                    console.log(term);
-                    var result = [];
-                    var firstWord = [];
-                    var inLine = [];
-                    $.each(that.autoSuggestLines, function (index, value) {
-                        if (firstWord.length >= that.options.suggestLength) {
-                            if (debug) console.log("Max suggestions reached");
-                            //break out of $.each
-                            return false;
-                        }
-                        var termIndex = value.toLowerCase().indexOf(term.toLowerCase());
-                        if (termIndex === 0) {
-                            if (value.trim() === term) {
-                                firstWord.unshift(value);
-                            } else {
-                                firstWord.push(value);
-                            }
-                        } else if (termIndex > 0) {
-                            inLine.push(value);
-                        }
-                    });
-                    //suggestLength
-                    result = result.concat(firstWord.slice(0, that.options.suggestLength)).concat(inLine.slice(0, that.options.suggestLength - result.length));
-                    if (result.length === 1 && result[0].trim() === term) {
-                        result = [];
-                    }
-                    response(result);//this will show in the selection box.
-                    //response(term);
-                },
-                focus: function( event, ui ) {
-                    return false;
-                },
-                select: function( event, ui ) {
-                    console.log("Select");
-                    //console.log(event);
-                    console.log(ui.item.value);
-                    that.setCurrentLine(ui.item.value, that);
-                    return false;
-                },
-                position: { my : "right top", at: "right bottom" },
-                delay: 0,
-                autoFocus: this.options.autoFocus
             }).focus();
+            if (this.options.autoSuggest) {
+                this.$worklog.autocomplete({
+                    source: function (request, response) {
+                        var term = request.term.trim();
+                        console.log(term);
+                        var result = [];
+                        var firstWord = [];
+                        var inLine = [];
+                        $.each(that.autoSuggestLines, function (index, value) {
+                            if (firstWord.length >= that.options.suggestLength) {
+                                if (debug) console.log("Max suggestions reached");
+                                //break out of $.each
+                                return false;
+                            }
+                            var termIndex = value.toLowerCase().indexOf(term.toLowerCase());
+                            if (termIndex === 0) {
+                                if (value.trim() === term) {
+                                    firstWord.unshift(value);
+                                } else {
+                                    firstWord.push(value);
+                                }
+                            } else if (termIndex > 0) {
+                                inLine.push(value);
+                            }
+                        });
+                        //suggestLength
+                        result = result.concat(firstWord.slice(0, that.options.suggestLength)).concat(inLine.slice(0, that.options.suggestLength - result.length));
+                        if (result.length === 1 && result[0].trim() === term) {
+                            result = [];
+                        }
+                        response(result);//this will show in the selection box.
+                        //response(term);
+                    },
+                    focus: function( event, ui ) {
+                        return false;
+                    },
+                    select: function( event, ui ) {
+                        console.log("Select");
+                        //console.log(event);
+                        console.log(ui.item.value);
+                        that.setCurrentLine(ui.item.value, that);
+                        return false;
+                    },
+                    position: { my : "right top", at: "right bottom" },
+                    delay: 0,
+                    autoFocus: this.options.autoFocus
+                })
+            }
         },
         loadLog: function () {
             if (debug) console.log("loadLog");
             var that = this;
             var worklogVal = "";
             var logObject = this.options.template;
-            $.each(logObject.sections, function (index, value){
-                //console.log(value);
-                if (logObject.firstLineTitle){
-                    switch(that.options.format) {
-                        case "html":
-                            worklogVal += '<font color="' + that.options.titleColor + '"><b><u>' + value.shift() + '</u></b></font>\n';
-                            break;
-                        case "plain":
-//                            worklogVal += logObject[value].title + '\n';
-                            break;
+            if (logObject) {
+                $.each(logObject.sections, function (index, value){
+                    //console.log(value);
+                    if (logObject.firstLineTitle){
+                        switch(that.options.format) {
+                            case "html":
+                                worklogVal += '<font color="' + that.options.titleColor + '"><b><u>' + value.shift() + '</u></b></font>\n';
+                                break;
+                            case "plain":
+    //                            worklogVal += logObject[value].title + '\n';
+                                break;
+                        }
                     }
+                    if (value.length){
+                        worklogVal += value.join("\n") + '\n\n';
+                    }
+                });
+                if (logObject.sig !=  null){
+                    worklogVal += '<b>' + logObject.sig + '</b>';
                 }
-                if (value.length){
-                    worklogVal += value.join("\n") + '\n\n';
-                }
-            });
-            if (logObject.sig !=  null){
-                worklogVal += '<b>' + logObject.sig + '</b>';
+    //            if (debug) console.log(worklogVal);
+                this.$worklog.val(worklogVal);
+                this.$worklog.data("linesArray", worklogVal.split("\n"));
+                this.$worklog.trigger("update.autogrow");
             }
-//            if (debug) console.log(worklogVal);
-            this.$worklog.val(worklogVal);
-            this.$worklog.data("linesArray", worklogVal.split("\n"));
-            this.$worklog.trigger("update.autogrow");
         },
-        setCurrentLine: function (value, obj) {
-            var logLines = obj.$worklog.data("linesArray");
-            logLines[obj.currLine] = value;
-            var cursorPos = obj.$worklog[0].selectionStart;
-            obj.$worklog.val(logLines.join('\n'));
-            var newPos = cursorPos + obj.$worklog.val().substring(cursorPos).indexOf("\n");
-            obj.$worklog[0].setSelectionRange(newPos, newPos);
+        setCurrentLine: function (value, that) {
+            var logLines = that.$worklog.data("linesArray");
+            logLines[that.currLine] = value;
+            var cursorPos = that.$worklog[0].selectionStart;
+            that.$worklog.val(logLines.join('\n'));
+            var newPos = cursorPos + that.$worklog.val().substring(cursorPos).indexOf("\n");
+            that.$worklog[0].setSelectionRange(newPos, newPos);
         }
     });
     
