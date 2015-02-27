@@ -1,59 +1,75 @@
-(function( $ ) {
+/*
+ *  Project: jquery.worklog.js
+ *  Description: Worklog with templating + autogrow + autosuggest
+ *  Author: Daniel Petty
+ *  License: This is free and unencumbered software released into the public domain.
+ */
+
+// the semi-colon before function invocation is a safety net against concatenated
+// scripts and/or other plugins which may not be closed properly.
+;(function ( $, window, document, undefined ) {
     var debug = true;
-    $.fn.worklog = function(options) {
-        if (debug) console.log("worklog");
-        // Apply options
-        var settings = $.extend({}, $.fn.worklog.defaults, options );
-        return this.each(function() {
-            var dom = $(this);
-            // This won't work with live queries as there is no specific element to attach this
-            // one way to deal with this could be to store a reference to self and then compare that in click?
-            if (dom.data('worklog'))
-                return; // already an editor here
-            dom.data('worklog', true);
-            new WorkLog(settings, dom).init();
-        });
-    };
- 
-    // Plugin defaults
-    $.fn.worklog.defaults = {
-        // These are the defaults.
-        width: "650px",
-        height: "200px",
-        background: "rgba(255,255,255,0.8)",
-        format: "html",
-        titleColor: "#000000",
-        template: {
-            name: "Default",
-            firstLineTitle: true,
-            sections: [ 
-                ['Section 1 Header', 'Section 1 line 1', 'Section 1 line 2'],
-                ['Section 2 Header', 'Section 2 line 1', 'Section 2 line 2']
+
+    // undefined is used here as the undefined global variable in ECMAScript 3 is
+    // mutable (ie. it can be changed by someone else). undefined isn't really being
+    // passed in so we can ensure the value of it is truly undefined. In ES5, undefined
+    // can no longer be modified.
+
+    // window is passed through as local variable rather than global
+    // as this (slightly) quickens the resolution process and can be more efficiently
+    // minified (especially when both are regularly referenced in your plugin).
+
+    // Create the defaults once
+    var pluginName = 'worklog',
+        defaults = {
+            // These are the defaults.
+            width: "650px",
+            height: "200px",
+            background: "rgba(255,255,255,0.8)",
+            format: "html",
+            titleColor: "#000000",
+            template: {
+                name: "Default",
+                firstLineTitle: true,
+                sections: [ 
+                    ['Section 1 Header', 'Section 1 line 1', 'Section 1 line 2'],
+                    ['Section 2 Header', 'Section 2 line 1', 'Section 2 line 2']
+                ],
+                sig: "here"
+            },
+            autoSuggest: [
+                {"line":"Section 1 line 1 suggestion 1 ","count":1,"lastUsed":0},
+                {"line":"Section 1 line 1 suggestion 2 ","count":1,"lastUsed":0},
+                {"line":"Section 1 line 2 suggestion 1 ","count":1,"lastUsed":0},
+                {"line":"Section 1 line 2 noodles ","count":1,"lastUsed":0},
+                {"line":"Section 1 line 2 dragon ","count":1,"lastUsed":0}
             ],
-            sig: "here"
-        },
-        autoSuggest: [
-            {"line":"Section 1 line 1 suggestion 1 ","count":1,"lastUsed":0},
-            {"line":"Section 1 line 1 suggestion 2 ","count":1,"lastUsed":0},
-            {"line":"Section 1 line 2 suggestion 1 ","count":1,"lastUsed":0},
-            {"line":"Section 1 line 2 noodles ","count":1,"lastUsed":0},
-            {"line":"Section 1 line 2 dragon ","count":1,"lastUsed":0}
-        ],
-        autoFocus: false,
-        suggestLength: 24
-    };
-    //
-    function WorkLog(settings, dom) {
-        this.settings = settings;
-        this.dom = dom;
+            autoFocus: false,
+            suggestLength: 24
+        };
+
+    // The actual plugin constructor
+    function Plugin( element, options ) {
+        this.element = element;
+        //this.dom = $(element);
+        // jQuery has an extend method which merges the contents of two or
+        // more objects, storing the result in the first object. The first object
+        // is generally empty as we don't want to alter the default options for
+        // future instances of the plugin
+        this.options = $.extend( {}, defaults, options) ;
+
+        this._defaults = defaults;
+        this._name = pluginName;
         this.autoSuggestLines = [];
         this.$worklog = null;
         this.checkInterval = null;
         this.currLine = 1;
         this.lineHeight = 15;
-    };
+        //
+        this.init();
+    }
     //
-    $.extend(WorkLog.prototype, {
+    $.extend(Plugin.prototype, {
         init: function() {
             if (debug) console.log("init");
             this.setAutoSuggestLines();
@@ -66,7 +82,7 @@
             if (debug) console.log("setAutoSuggestLines");
             //this.autoSuggestLines = new Array();
             var that = this;
-            $.each(this.settings.autoSuggest, function (index, value){
+            $.each(this.options.autoSuggest, function (index, value){
                 //console.log(that);
                 that.autoSuggestLines.push(value.line);
             });
@@ -98,15 +114,15 @@
         createTextArea: function () {
             if (debug) console.log("createTextArea");
             var that = this;
-            this.dom.html("<b>" + this.settings.template.name + '</b><br><textarea class="worklog" autofocus="false"></textarea>');
-            this.$worklog = $('textarea', this.dom);
+            $(this.element).html("<b>" + this.options.template.name + '</b><br><textarea class="worklog" autofocus="false"></textarea>');
+            this.$worklog = $('textarea', $(this.element));
             this.$worklog.css({
-                width: this.settings.width,
-                height: this.settings.height,
-                background: this.settings.background,
+                width: this.options.width,
+                height: this.options.height,
+                background: this.options.background,
                 resize: 'none'
             }).attr({
-                minWidth: this.settings.width
+                minWidth: this.options.width
             })
             .autogrow({
                 vertical : true,
@@ -130,7 +146,7 @@
                     var firstWord = [];
                     var inLine = [];
                     $.each(that.autoSuggestLines, function (index, value) {
-                        if (firstWord.length >= that.settings.suggestLength) {
+                        if (firstWord.length >= that.options.suggestLength) {
                             if (debug) console.log("Max suggestions reached");
                             //break out of $.each
                             return false;
@@ -147,7 +163,7 @@
                         }
                     });
                     //suggestLength
-                    result = result.concat(firstWord.slice(0, that.settings.suggestLength)).concat(inLine.slice(0, that.settings.suggestLength - result.length));
+                    result = result.concat(firstWord.slice(0, that.options.suggestLength)).concat(inLine.slice(0, that.options.suggestLength - result.length));
                     if (result.length === 1 && result[0].trim() === term) {
                         result = [];
                     }
@@ -166,20 +182,20 @@
                 },
                 position: { my : "right top", at: "right bottom" },
                 delay: 0,
-                autoFocus: this.settings.autoFocus
+                autoFocus: this.options.autoFocus
             }).focus();
         },
         loadLog: function () {
             if (debug) console.log("loadLog");
             var that = this;
             var worklogVal = "";
-            var logObject = this.settings.template;
+            var logObject = this.options.template;
             $.each(logObject.sections, function (index, value){
                 //console.log(value);
                 if (logObject.firstLineTitle){
-                    switch(that.settings.format) {
+                    switch(that.options.format) {
                         case "html":
-                            worklogVal += '<font color="' + that.settings.titleColor + '"><b><u>' + value.shift() + '</u></b></font>\n';
+                            worklogVal += '<font color="' + that.options.titleColor + '"><b><u>' + value.shift() + '</u></b></font>\n';
                             break;
                         case "plain":
 //                            worklogVal += logObject[value].title + '\n';
@@ -207,4 +223,72 @@
             obj.$worklog[0].setSelectionRange(newPos, newPos);
         }
     });
-}(jQuery));
+    
+//    Plugin.prototype.init = function () {
+//        // Place initialization logic here
+//        // You already have access to the DOM element and the options via the instance,
+//        // e.g., this.element and this.options
+//    };
+
+    // You don't need to change something below:
+    // A really lightweight plugin wrapper around the constructor,
+    // preventing against multiple instantiations and allowing any
+    // public function (ie. a function whose name doesn't start
+    // with an underscore) to be called via the jQuery plugin,
+    // e.g. $(element).defaultPluginName('functionName', arg1, arg2)
+    $.fn[pluginName] = function ( options ) {
+        var args = arguments;
+
+        // Is the first parameter an object (options), or was omitted,
+        // instantiate a new instance of the plugin.
+        if (options === undefined || typeof options === 'object') {
+            return this.each(function () {
+
+                // Only allow the plugin to be instantiated once,
+                // so we check that the element has no plugin instantiation yet
+                if (!$.data(this, 'plugin_' + pluginName)) {
+
+                    // if it has no instance, create a new one,
+                    // pass options to our plugin constructor,
+                    // and store the plugin instance
+                    // in the elements jQuery data object.
+                    $.data(this, 'plugin_' + pluginName, new Plugin( this, options ));
+                }
+            });
+
+        // If the first parameter is a string and it doesn't start
+        // with an underscore or "contains" the `init`-function,
+        // treat this as a call to a public method.
+        } else if (typeof options === 'string' && options[0] !== '_' && options !== 'init') {
+
+            // Cache the method call
+            // to make it possible
+            // to return a value
+            var returns;
+
+            this.each(function () {
+                var instance = $.data(this, 'plugin_' + pluginName);
+
+                // Tests that there's already a plugin-instance
+                // and checks that the requested public method exists
+                if (instance instanceof Plugin && typeof instance[options] === 'function') {
+
+                    // Call the method of our plugin instance,
+                    // and pass it the supplied arguments.
+                    returns = instance[options].apply( instance, Array.prototype.slice.call( args, 1 ) );
+                }
+
+                // Allow instances to be destroyed via the 'destroy' method
+                if (options === 'destroy') {
+                  $.data(this, 'plugin_' + pluginName, null);
+                }
+            });
+
+            // If the earlier cached method
+            // gives a value back return the value,
+            // otherwise return this to preserve chainability.
+            return returns !== undefined ? returns : this;
+        }
+    };
+
+}(jQuery, window, document));
