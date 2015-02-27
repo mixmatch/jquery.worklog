@@ -59,7 +59,7 @@
             this.setAutoSuggestLines();
             this.createTextArea();
             this.loadLog();
-            this.lineHeight =parseInt(this.$worklog.css("height").replace('px', ''), 10)/this.$worklog.data("linesArray").length;
+            this.lineHeight = parseInt(this.$worklog.css("height"), 10)/this.$worklog.data("linesArray").length;
             if (debug) console.log(this)
         },
         setAutoSuggestLines: function () {
@@ -81,12 +81,12 @@
                 if (position !== obj.currLine) {
                     if (debug) console.log(position);
                     obj.currLine = position;
-                    autocompletePos = parseInt(obj.$worklog.css("padding-top").replace('px', ''), 10) + ((obj.currLine+1) *  obj.lineHeight);
+                    autocompletePos = parseInt(obj.$worklog.css("padding-top"), 10) + ((obj.currLine+1) *  obj.lineHeight);
                     obj.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
                 } else if (tArray[position] !== obj.$worklog.data("linesArray")[position]) {
                     if (debug) console.log(tArray[position]);
                     obj.$worklog.data("linesArray", t.value.split("\n"));
-                    autocompletePos = parseInt(obj.$worklog.css("padding-top").replace('px', ''), 10) + ((obj.currLine+1) *  obj.lineHeight);
+                    autocompletePos = parseInt(obj.$worklog.css("padding-top"), 10) + ((obj.currLine+1) *  obj.lineHeight);
                     console.log(autocompletePos);
                     obj.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
                 }
