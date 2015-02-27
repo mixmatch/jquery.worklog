@@ -28,7 +28,7 @@
             background: "#FFF",
             format: "plain",
             titleColor: "#000",
-            fixMinHeight: true,
+            fixMinHeight: false,
             template: false,
             autoSuggest: false,
             autoFocus: false,
@@ -124,7 +124,7 @@
             }).autogrow({
                 vertical : true,
                 horizontal : true,
-                fixMinHeight: this.fixMinHeight
+                fixMinHeight: this.options.fixMinHeight
             }).focus(function () {
                 that.checkInterval = setInterval(that.checkCursorPosition, 250, that);
             }).blur(function () {

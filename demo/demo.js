@@ -7,7 +7,6 @@ $(document).ready(function () {
         background: "rgba(255,255,255,0.8)",
         format: "html",
         titleColor: "#000000",
-        fixMinHeight: false,
         template: {
             name: "Default",
             firstLineTitle: true,
