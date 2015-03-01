@@ -42,10 +42,13 @@
         // more objects, storing the result in the first object. The first object
         // is generally empty as we don't want to alter the default options for
         // future instances of the plugin
-        this.options = $.extend( {}, defaults, options) ;
+        this.options = $.extend({}, defaults, options);
 
         this._defaults = defaults;
         this._name = pluginName;
+		this.edited = false;
+		this.lastWorklogEdit = null;
+		this.inactiveInterval = [];
         this.autoSuggestLines = [];
         this.$worklog = null;
         this.checkInterval = null;
@@ -61,7 +64,6 @@
             this.setAutoSuggestLines();
             this.createTextArea();
             this.loadLog();
-            
             this.lineHeight = parseInt(this.$worklog.css("height"), 10)/(this.$worklog.data("linesArray").length || 1);
             if (debug) console.log(this)
         },
@@ -76,27 +78,29 @@
                 });
             }
         },
-        checkCursorPosition: function (that) {
-            if (debug) console.log("checkCursorPosition");
-            if (that.$worklog != null) {
-                var t = that.$worklog[0];
+        checkCursorPosition: function () {
+            //if (debug) console.log("checkCursorPosition");
+            if (this.$worklog != null && that.$worklog.data("linesArray") != null) {
+                var t = this.$worklog[0];
                 var tArray = t.value.split("\n");
                 var position = t.value.substr(0, t.selectionStart).split("\n").length - 1;
                 var autocompletePos;
-                if (position !== that.currLine) {
+                if (position !== this.currLine) {
                     if (debug) console.log(position);
-                    that.currLine = position;
-                    autocompletePos = parseInt(that.$worklog.css("padding-top"), 10) + ((that.currLine+1) *  that.lineHeight);
-                    if (that.options.autoSuggest) {
-                        that.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
+                    this.currLine = position;
+                    autocompletePos = parseInt(this.$worklog.css("padding-top"), 10) + ((this.currLine + 1) *  this.lineHeight);
+                    if (this.options.autoSuggest) {
+                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
                     }
-                } else if (tArray[position] !== that.$worklog.data("linesArray")[position]) {
+                } else if (tArray[position] !== this.$worklog.data("linesArray")[position]) {
                     if (debug) console.log(tArray[position]);
-                    that.$worklog.data("linesArray", t.value.split("\n"));
-                    autocompletePos = parseInt(that.$worklog.css("padding-top"), 10) + ((that.currLine+1) *  that.lineHeight);
+					this.edited = true;
+					this.lastWorklogEdit = new Date();
+                    this.$worklog.data("linesArray", t.value.split("\n"));
+                    autocompletePos = parseInt(this.$worklog.css("padding-top"), 10) + ((this.currLine+1) *  this.lineHeight);
                     console.log(autocompletePos);
-                    if (that.options.autoSuggest) {
-                        that.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
+                    if (this.options.autoSuggest) {
+                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
                     }
                 }
                 return position;
@@ -106,6 +110,7 @@
         },
         createTextArea: function () {
             if (debug) console.log("createTextArea");
+            //for callbacks that need this scope
             var that = this;
             var templateHtml = '';
             if (this.options.template) {
@@ -126,7 +131,7 @@
                 horizontal : true,
                 fixMinHeight: this.options.fixMinHeight
             }).focus(function () {
-                that.checkInterval = setInterval(that.checkCursorPosition, 250, that);
+                that.checkInterval = setInterval(function () { that.checkCursorPosition.apply(that); }, 250);
             }).blur(function () {
                 clearInterval(that.checkInterval);
             }).keydown(function(event) {
@@ -134,7 +139,7 @@
                 if (event.keyCode == keyCode.UP || event.keyCode == keyCode.DOWN) {
                       event.stopImmediatePropagation();
                 }
-            }).focus();
+            });
             if (this.options.autoSuggest) {
                 this.$worklog.autocomplete({
                     source: function (request, response) {
@@ -222,7 +227,10 @@
             that.$worklog.val(logLines.join('\n'));
             var newPos = cursorPos + that.$worklog.val().substring(cursorPos).indexOf("\n");
             that.$worklog[0].setSelectionRange(newPos, newPos);
-        }
+        },
+		replace: function (before, after) {
+			
+		}
     });
     
 //    Plugin.prototype.init = function () {
