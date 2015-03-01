@@ -5,23 +5,11 @@
  *  License: This is free and unencumbered software released into the public domain.
  */
 
-// the semi-colon before function invocation is a safety net against concatenated
-// scripts and/or other plugins which may not be closed properly.
-;(function ( $, window, document, undefined ) {
+ ;(function ( $, window, document, undefined ) {
     var debug = true;
-
-    // undefined is used here as the undefined global variable in ECMAScript 3 is
-    // mutable (ie. it can be changed by someone else). undefined isn't really being
-    // passed in so we can ensure the value of it is truly undefined. In ES5, undefined
-    // can no longer be modified.
-
-    // window is passed through as local variable rather than global
-    // as this (slightly) quickens the resolution process and can be more efficiently
-    // minified (especially when both are regularly referenced in your plugin).
-
-    // Create the defaults once
-    var pluginName = 'worklog',
-        defaults = {
+    $.widget( "mixmatch.worklog" , {
+        //Options to be used as defaults
+        options: {
             // These are the defaults.
             width: "650px",
             height: "200px",
@@ -33,54 +21,60 @@
             autoSuggest: false,
             autoFocus: false,
             suggestLength: 24
-        };
-
-    // The actual plugin constructor
-    function Plugin( element, options ) {
-        this.element = element;
-        // jQuery has an extend method which merges the contents of two or
-        // more objects, storing the result in the first object. The first object
-        // is generally empty as we don't want to alter the default options for
-        // future instances of the plugin
-        this.options = $.extend({}, defaults, options);
-
-        this._defaults = defaults;
-        this._name = pluginName;
-		this.edited = false;
-		this.lastWorklogEdit = null;
-		this.inactiveInterval = [];
-        this.autoSuggestLines = [];
-        this.$worklog = null;
-        this.checkInterval = null;
-        this.currLine = 1;
-        this.lineHeight = 15;
-        //
-        this.init();
-    }
-    //
-    $.extend(Plugin.prototype, {
-        init: function() {
-            if (debug) console.log("init");
-            this.setAutoSuggestLines();
-            this.createTextArea();
-            this.loadLog();
-            this.lineHeight = parseInt(this.$worklog.css("height"), 10)/(this.$worklog.data("linesArray").length || 1);
-            if (debug) console.log(this)
         },
-        setAutoSuggestLines: function () {
+		_create: function() {
+			if (debug) console.log("_create");
+			this.edited = false;
+			this.lastWorklogEdit = null;
+			this.inactiveInterval = [];
+			this.autoSuggestLines = [];
+			this.lines = [];
+			this.$worklog = null;
+			this.checkInterval = null;
+			this.currLine = 1;
+			this.lineHeight = 15;
+			this.element.addClass('mixmatch-worklog');
+            this._setAutoSuggestLines();
+            this._createTextArea();
+            this._loadLog();
+			this.lineHeight = parseInt(this.$worklog.css("height"), 10)/(this.lines.length || 1);
+            if (debug) { console.log(this); }
+			this._delay( this._blur, 1000 );
+			//this.element.blur();
+			//this.refresh();
+		},
+		_setOption: function( key, value ) {
+			this._super( key, value );
+		},
+		_setOptions: function( options ) {
+			this._super( options );
+			this.refresh();
+		},
+		_blur: function() {
+			this.$worklog.blur();
+		},
+		_constrain: function( value ) {
+
+		},
+		_destroy: function() {
+			this.element
+				.removeClass( "mixmatch-worklog" )
+				.text( "" );
+		},
+		_setAutoSuggestLines: function () {
             if (debug) console.log("setAutoSuggestLines");
             //this.autoSuggestLines = new Array();
             if (this.options.autoSuggest) {
                 var that = this;
                 $.each(this.options.autoSuggest, function (index, value){
-                    //console.log(that);
+                    //if (debug) console.log(that);
                     that.autoSuggestLines.push(value.line);
                 });
             }
         },
-        checkCursorPosition: function () {
+        _checkCursorPosition: function () {
             //if (debug) console.log("checkCursorPosition");
-            if (this.$worklog != null && that.$worklog.data("linesArray") != null) {
+            if (this.$worklog != null && this.lines != null) {
                 var t = this.$worklog[0];
                 var tArray = t.value.split("\n");
                 var position = t.value.substr(0, t.selectionStart).split("\n").length - 1;
@@ -90,17 +84,17 @@
                     this.currLine = position;
                     autocompletePos = parseInt(this.$worklog.css("padding-top"), 10) + ((this.currLine + 1) *  this.lineHeight);
                     if (this.options.autoSuggest) {
-                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
+                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
                     }
-                } else if (tArray[position] !== this.$worklog.data("linesArray")[position]) {
+                } else if (tArray[position] !== this.lines[position]) {
                     if (debug) console.log(tArray[position]);
 					this.edited = true;
 					this.lastWorklogEdit = new Date();
-                    this.$worklog.data("linesArray", t.value.split("\n"));
+                    this.lines = t.value.split("\n");
                     autocompletePos = parseInt(this.$worklog.css("padding-top"), 10) + ((this.currLine+1) *  this.lineHeight);
-                    console.log(autocompletePos);
+                    if (debug) console.log(autocompletePos);
                     if (this.options.autoSuggest) {
-                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos } ).autocomplete("search", tArray[position]);
+                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
                     }
                 }
                 return position;
@@ -108,7 +102,7 @@
                 return false;   
             }
         },
-        createTextArea: function () {
+        _createTextArea: function () {
             if (debug) console.log("createTextArea");
             //for callbacks that need this scope
             var that = this;
@@ -116,9 +110,8 @@
             if (this.options.template) {
                 templateHtml += "<b>" + this.options.template.name + '</b><br>';
             }
-            $(this.element).html(templateHtml + '<textarea class="worklog" autofocus="false"></textarea>');
+            $(this.element).html(templateHtml + '<textarea autofocus="false" class="mixmatch-worklog-input"></textarea>');
             this.$worklog = $('textarea', $(this.element));
-            this.$worklog.data("linesArray", []);
             this.$worklog.css({
                 width: this.options.width,
                 height: this.options.height,
@@ -131,7 +124,7 @@
                 horizontal : true,
                 fixMinHeight: this.options.fixMinHeight
             }).focus(function () {
-                that.checkInterval = setInterval(function () { that.checkCursorPosition.apply(that); }, 250);
+                that.checkInterval = setInterval(function () { that._checkCursorPosition.apply(that); }, 250);
             }).blur(function () {
                 clearInterval(that.checkInterval);
             }).keydown(function(event) {
@@ -144,7 +137,7 @@
                 this.$worklog.autocomplete({
                     source: function (request, response) {
                         var term = request.term.trim();
-                        console.log(term);
+                        if (debug) console.log(term);
                         var result = [];
                         var firstWord = [];
                         var inLine = [];
@@ -177,10 +170,10 @@
                         return false;
                     },
                     select: function( event, ui ) {
-                        console.log("Select");
+                        if (debug) console.log("Select");
                         //console.log(event);
-                        console.log(ui.item.value);
-                        that.setCurrentLine(ui.item.value, that);
+                        if (debug) console.log(ui.item.value);
+                        that.setCurrentLine(ui.item.value);
                         return false;
                     },
                     position: { my : "right top", at: "right bottom" },
@@ -189,7 +182,7 @@
                 })
             }
         },
-        loadLog: function () {
+        _loadLog: function () {
             if (debug) console.log("loadLog");
             var that = this;
             var worklogVal = "";
@@ -216,88 +209,48 @@
                 }
     //            if (debug) console.log(worklogVal);
                 this.$worklog.val(worklogVal);
-                this.$worklog.data("linesArray", worklogVal.split("\n"));
+                this.lines = worklogVal.split("\n");
                 this.$worklog.trigger("update.autogrow");
+				
             }
         },
-        setCurrentLine: function (value, that) {
-            var logLines = that.$worklog.data("linesArray");
-            logLines[that.currLine] = value;
-            var cursorPos = that.$worklog[0].selectionStart;
-            that.$worklog.val(logLines.join('\n'));
-            var newPos = cursorPos + that.$worklog.val().substring(cursorPos).indexOf("\n");
-            that.$worklog[0].setSelectionRange(newPos, newPos);
+		findLine: function (search) {
+			//search = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			var lineNum;
+			$.each(this.lines, function (index, value){
+				if (value.indexOf(search) !== -1) {
+					lineNum = index;
+					return false
+				}
+			});
+			return lineNum;
+		},
+        setLine: function (line, value) {
+            var cursorPos = this.$worklog[0].selectionStart;
+			this.lines[line] = value;
+            this.$worklog.val(this.lines.join('\n'));
+            var newPos = cursorPos + this.$worklog.val().substring(cursorPos).indexOf("\n");
+            this.$worklog[0].setSelectionRange(newPos, newPos);
+        },
+        setCurrentLine: function (value) {
+			this.setLine(this.currLine, value);
         },
 		replace: function (before, after) {
-			
+			before = before.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			var re = new RegExp(before);
+			var worklogVal = this.$worklog.val().replace(re, after);
+			this.$worklog.val(worklogVal);
+			this.lines = worklogVal.split("\n");
+			this.$worklog.trigger("update.autogrow");
+		},
+		replaceLine: function (before, after) {
+			before = before.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			var re = new RegExp(before);
+			var worklogVal = this.$worklog.val().replace(re, after);
+			this.$worklog.val(worklogVal);
+			this.lines = worklogVal.split("\n");
+			this.$worklog.trigger("update.autogrow");
 		}
-    });
-    
-//    Plugin.prototype.init = function () {
-//        // Place initialization logic here
-//        // You already have access to the DOM element and the options via the instance,
-//        // e.g., this.element and this.options
-//    };
+	});
 
-    // You don't need to change something below:
-    // A really lightweight plugin wrapper around the constructor,
-    // preventing against multiple instantiations and allowing any
-    // public function (ie. a function whose name doesn't start
-    // with an underscore) to be called via the jQuery plugin,
-    // e.g. $(element).defaultPluginName('functionName', arg1, arg2)
-    $.fn[pluginName] = function ( options ) {
-        var args = arguments;
-
-        // Is the first parameter an object (options), or was omitted,
-        // instantiate a new instance of the plugin.
-        if (options === undefined || typeof options === 'object') {
-            return this.each(function () {
-
-                // Only allow the plugin to be instantiated once,
-                // so we check that the element has no plugin instantiation yet
-                if (!$.data(this, 'plugin_' + pluginName)) {
-
-                    // if it has no instance, create a new one,
-                    // pass options to our plugin constructor,
-                    // and store the plugin instance
-                    // in the elements jQuery data object.
-                    $.data(this, 'plugin_' + pluginName, new Plugin( this, options ));
-                }
-            });
-
-        // If the first parameter is a string and it doesn't start
-        // with an underscore or "contains" the `init`-function,
-        // treat this as a call to a public method.
-        } else if (typeof options === 'string' && options[0] !== '_' && options !== 'init') {
-
-            // Cache the method call
-            // to make it possible
-            // to return a value
-            var returns;
-
-            this.each(function () {
-                var instance = $.data(this, 'plugin_' + pluginName);
-
-                // Tests that there's already a plugin-instance
-                // and checks that the requested public method exists
-                if (instance instanceof Plugin && typeof instance[options] === 'function') {
-
-                    // Call the method of our plugin instance,
-                    // and pass it the supplied arguments.
-                    returns = instance[options].apply( instance, Array.prototype.slice.call( args, 1 ) );
-                }
-
-                // Allow instances to be destroyed via the 'destroy' method
-                if (options === 'destroy') {
-                  $.data(this, 'plugin_' + pluginName, null);
-                }
-            });
-
-            // If the earlier cached method
-            // gives a value back return the value,
-            // otherwise return this to preserve chainability.
-            return returns !== undefined ? returns : this;
-        }
-    };
-
-}(jQuery, window, document));
+})( jQuery, window, document );
