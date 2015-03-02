@@ -150,7 +150,7 @@
                             var termIndex = value.toLowerCase().indexOf(term.toLowerCase());
                             if (termIndex === 0) {
                                 if (value.trim() === term) {
-                                    firstWord.unshift(value);
+                                    //firstWord.unshift(value);
                                 } else {
                                     firstWord.push(value);
                                 }
@@ -214,43 +214,90 @@
 				
             }
         },
-		findLine: function (search) {
+		findLine: function (search, startIndex, endIndex) {
 			//search = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			var lineNum;
+			if (search === '') {
+				search = '^$';
+			}
+			var re = new RegExp(search);
+			startIndex = startIndex != null ? startIndex : 0;
+			endIndex = endIndex != null ? endIndex : this.lines.length;
+			var lineNum = false;
+			if (typeof startIndex === 'string') {
+				startIndex = this.findLine(startIndex);
+				if (startIndex === false) {
+					return false;
+				}
+				startIndex++;
+			}
+			if (typeof endIndex === 'string') {
+				endIndex = this.findLine(endIndex);
+				if (endIndex === false) {
+					return false;
+				}
+			}
 			$.each(this.lines, function (index, value){
-				if (value.indexOf(search) !== -1) {
+				if ((re.test(value)) && (index >= startIndex) && (index < endIndex)) {
+				//if ((value === search || value.indexOf(search) !== -1) && (index >= startIndex) && (index < endIndex)) {
 					lineNum = index;
-					return false
+					return false;
 				}
 			});
 			return lineNum;
 		},
-        setLine: function (line, value) {
+		addLine: function (value, lineNum) {
+			lineNum = lineNum != null ? lineNum : this.lines.length;
             var cursorPos = this.$worklog[0].selectionStart;
-			this.lines[line] = value;
+			if (Array.isArray(value)) {
+				this.lines = this.lines.slice(0, lineNum).concat(value).concat(this.lines.slice(lineNum));
+				
+			} else {
+				this.lines.splice(lineNum, 0, value);
+			}
+            this.$worklog.val(this.lines.join('\n'));
+			var newPos = cursorPos + this.$worklog.val().substring(cursorPos).indexOf("\n");
+			this.$worklog[0].setSelectionRange(newPos, newPos);
+			this.$worklog.trigger("update.autogrow");
+		},
+        setLine: function (lineNum, value) {
+            var cursorPos = this.$worklog[0].selectionStart;
+			if (Array.isArray(value)) {
+				this.lines = this.lines.slice(0, lineNum).concat(value).concat(this.lines.slice(lineNum + 1));
+			} else {
+				this.lines[lineNum] = value;
+			}
             this.$worklog.val(this.lines.join('\n'));
             var newPos = cursorPos + this.$worklog.val().substring(cursorPos).indexOf("\n");
             this.$worklog[0].setSelectionRange(newPos, newPos);
+			this.$worklog.trigger("update.autogrow");
         },
         setCurrentLine: function (value) {
 			this.setLine(this.currLine, value);
         },
-		replace: function (before, after) {
-			before = before.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			var re = new RegExp(before);
-			var worklogVal = this.$worklog.val().replace(re, after);
+		replace: function (findVal, replaceVal) {
+			//before = before.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			var re = new RegExp(findVal);
+			var worklogVal = this.$worklog.val().replace(re, replaceVal);
 			this.$worklog.val(worklogVal);
 			this.lines = worklogVal.split("\n");
 			this.$worklog.trigger("update.autogrow");
 		},
-		replaceLine: function (before, after) {
-			before = before.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			var re = new RegExp(before);
-			var worklogVal = this.$worklog.val().replace(re, after);
-			this.$worklog.val(worklogVal);
-			this.lines = worklogVal.split("\n");
-			this.$worklog.trigger("update.autogrow");
+		replaceLine: function (findVal, replaceVal, startIndex, endIndex) {
+			//findVal = findVal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			//var re = new RegExp(findVal);
+			var lineNum = this.findLine(findVal, startIndex, endIndex);
+			if (lineNum !== false) {
+				this.setLine(lineNum, replaceVal);
+				return lineNum;
+			} else {
+				return false;
+			}
+		},
+		toArray: function () {
+			return this.lines;
+		},
+		value: function () {
+			return this.$worklog.val();
 		}
 	});
-
 })( jQuery, window, document );
