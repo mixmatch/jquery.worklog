@@ -87,55 +87,113 @@
             }
         },
         _checkCursorPosition: function (elem) {
-            if (debug) console.log("checkCursorPosition");
-            if (debug) console.log(elem);
-            if (debug) console.log($(elem));
-            
-//            if (this.$worklog != null && this.lines != null) {
-//                var t = this.$worklog[0];
-//                var tArray = t.value.split("\n");
-//                var position = t.value.substr(0, t.selectionStart).split("\n").length - 1;
-//                var autocompletePos;
-//                if (position !== this.currLine) {
-//                    if (debug) console.log(position);
-//                    this.currLine = position;
-//                    autocompletePos = parseInt(this.$worklog.css("padding-top"), 10) + ((this.currLine + 1) *  this.lineHeight);
-//                    if (this.options.autoSuggest) {
-//                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
-//                    }
-//                } else if (tArray[position] !== this.lines[position]) {
-//                    if (debug) console.log(tArray[position]);
-//					this.edited = true;
-//					this.lastWorklogEdit = new Date();
-//                    this.lines = t.value.split("\n");
-//                    autocompletePos = parseInt(this.$worklog.css("padding-top"), 10) + ((this.currLine+1) *  this.lineHeight);
-//                    if (debug) console.log(autocompletePos);
-//                    if (this.options.autoSuggest) {
-//                        this.$worklog.autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
-//                    }
+//            if (debug) console.log("checkCursorPosition");
+            if (debug) console.log(window.getSelection());
+            if (debug) console.log(window.getSelection().getRangeAt(0));
+//            if (debug) console.log(elem.innerText);
+//            if (debug) console.log($(elem)[0].innerText);
+//            var t = elem;
+//            var tArray = t.innerText.split("\n");
+//            var position = t.innerText.substr(0, t.selectionStart).split("\n").length - 1;
+//            if (debug) console.log(t.selectionStart);
+//            var autocompletePos;
+//            if (position !== this.currLine) {
+//                if (debug) console.log(position);
+//                this.currLine = position;
+//                autocompletePos = parseInt($(elem).css("padding-top"), 10) + ((this.currLine + 1) *  this.lineHeight);
+//                if (this.options.autoSuggest) {
+//                    //$(elem).autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
 //                }
-//                return position;
-//            } else {
-//                return false;   
+//            } else if (tArray[position] !== this.lines[position]) {
+//                if (debug) console.log(tArray[position]);
+//                this.edited = true;
+//                this.lastWorklogEdit = new Date();
+//                this.lines = t.innerText.split("\n");
+//                autocompletePos = parseInt($(elem).css("padding-top"), 10) + ((this.currLine+1) *  this.lineHeight);
+//                if (debug) console.log(autocompletePos);
+//                if (this.options.autoSuggest) {
+//                    //$(elem).autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
+//                }
 //            }
+//            return position;
         },
         _createTextArea: function () {
             if (debug) console.log("createTextArea");
             //for callbacks that need this scope
             var that = this;
             var templateHtml = '';
-            var logObject = this.log;
+            var logObject = $.extend(true, {}, this.options.template);
             if (logObject) {
-                $('<div id="' +this.nameSpace+ 'header"><b>[' + logObject.name + ' ] [B] [I] [U] [Color]</b></div><div id="' + this.nameSpace + 'body"></div>').appendTo(this.$element);
+                this.$element.css({
+                    width: this.options.width,
+                    height: this.options.height,
+                    background: this.options.background,
+                    padding: '2px',
+                    resize: 'none'
+                }).append($('<div>', {
+                    'id':this.nameSpace + 'header',
+                    'css': {'margin-bottom': '10px'}
+                }).append($('<b>', {
+                    'text':'[' + logObject.name + ' ] '
+                })).append($('<input>', {
+                    'id':this.nameSpace + 'boldCheck',
+                    'checked':that.options.title.bold,
+                    'type':'checkbox',
+                    'change': function () {
+                        if (debug) console.log($(this).is(':checked'));
+                        that.options.title.bold = $(this).is(':checked');
+                        that._setTitleFormat();
+                    }
+                })).append($('<label>', {
+                    'for':this.nameSpace + 'boldCheck',
+                    'html':'<b>B</b>'
+                })).append($('<input>', {
+                    'id':this.nameSpace + 'italicsCheck',
+                    'checked':that.options.title.italics,
+                    'type':'checkbox',
+                    'change': function () {
+                        if (debug) console.log($(this).is(':checked'));
+                        that.options.title.italics = $(this).is(':checked');
+                        that._setTitleFormat();
+                    }
+                })).append($('<label>', {
+                    'for':this.nameSpace + 'italicsCheck',
+                    'html':'<i>I</i>'
+                })).append($('<input>', {
+                    'id':this.nameSpace + 'underlineCheck',
+                    'checked':that.options.title.underline,
+                    'type':'checkbox',
+                    'change': function () {
+                        if (debug) console.log($(this).is(':checked'));
+                        that.options.title.underline = $(this).is(':checked');
+                        that._setTitleFormat();
+                    }
+                })).append($('<label>', {
+                    'for':this.nameSpace + 'underlineCheck',
+                    'html':'<u>U</u>'
+                })).append($('<input>', {
+                    'id':this.nameSpace + 'titleColor',
+                    'type':'color',
+                    'css':{'width':'16px', 'height':'16px', 'margin-left':'10px', 'padding': '0px 1px'},
+                    'change': function () {
+                        if (debug) console.log($(this).val());
+                        that.options.title.color = $(this).val();
+                        that._setTitleFormat();
+                        //that.options.title.underline = $(this).is(':checked');
+                    }
+                })).buttonset()
+                ).append($('<div>', {
+                    'id':this.nameSpace + 'body'
+                }));
+                $('.ui-button').css({"height": "14px", "width": "24px"});
+                $('.ui-button-text').css({"padding": "0px 2px", "margin": "0px auto", 'font-size': '0.9em'});
+                
                 base.$worklogBody = $('#' + this.nameSpace + 'body');
-                //templateHtml += '<div id="' +this.nameSpace+ 'header"><b>[' + logObject.name + ' ] [B] [I] [U] [Color]</b></div><div id="' +this.nameSpace+ 'body">';
                 $.each(logObject.sections, function (index, value){
                     //console.log(value);
                     if (logObject.firstLineTitle){
                         switch(that.options.format) {
                             case "html":
-                                
-                                //templateHtml += '<div id="' +that.nameSpace+ 'title' + index + '" class="editable"><font color="' + that.options.title.color + '">';
                                 var titleString = value.shift();
                                 if (that.options.title.italics) {
                                     titleString = '<i>' + titleString + '</i>';
@@ -146,42 +204,60 @@
                                 if (that.options.title.bold) {
                                     titleString = '<b>' + titleString + '</b>';
                                 }
-                                //templateHtml += titleString;
-                                //templateHtml += '</font></div>';
-                                base.$worklogBody.append('<div id="' +that.nameSpace+ 'title' + index + '" class="editable">').append('<font color="' + that.options.title.color + '">' + titleString + '</font>');
-                                //base.$worklogBody.append('<font color="' + that.options.title.color + '">' + titleString + '</font>');
+                                base.$worklogBody.append($('<div>', {
+                                    'id':that.nameSpace+ 'title' + index,
+                                    'class':'editable'
+                                }).append($('<font color="' + that.options.title.color + '">').html(titleString)
+                                ).data({type: 'title', index: index}));
                                 break;
                             case "plain":
-    //                            templateHtml += logObject[value].title + '\n';
                                 break;
                         }
                     }
                     if (value.length){
-                        //templateHtml += '<div id="' + that.nameSpace + 'section' + index + '" class="editable autosuggest">' +value.join("<br>") + '</div><br>';
-                        base.$worklogBody.append('<div id="' + that.nameSpace + 'section' + index + '" class="editable autosuggest">' +value.join("<br>") + '</div><br>');
+                        base.$worklogBody.append($('<div>', {
+                            'id':that.nameSpace + 'section' + index,
+                            'class':'editable autosuggest'
+                        }).data({type: 'section', index: index}).html(value.join("<br>"))).append('<br>');
                     }
                 });
                 if (logObject.sig !=  null){
-                    //templateHtml += '<div id="' + that.nameSpace + 'sig" class="editable"><b>' + logObject.sig + '</b></div>';
-                    base.$worklogBody.append('<div id="' + that.nameSpace + 'sig" class="editable"><b>' + logObject.sig + '</b></div>');
+                    base.$worklogBody.append($('<div>', {
+                        'id':that.nameSpace + 'sig',
+                        'class':'editable'
+                    }).data({type: 'sig'}).html('<b>' + logObject.sig + '</b>'));
                 }
             }
-            this.$element.css({
-                width: this.options.width,
-                height: this.options.height,
-                background: this.options.background,
-                padding: '2px',
-                resize: 'none'
-            });
-            $('.editable').attr('contentEditable', 'true');
-            $('.autosuggest').on( "input", function() {
+            $('.editable').attr('contentEditable', 'true').on( "input", function() {
                 if (debug) { console.log(this.innerText); }
-            }).focus(function () {
+                if (debug) { console.log($(this).data()); }
+                var elemObj = $(this).data();
+                switch (elemObj.type){
+                    case 'title':
+                        base.log.sections[elemObj.index][0] = this.innerText;
+                        break;
+                    case 'section':
+                        if(base.log.firstLineTitle) {
+                            var sectionText = this.innerText.split('\n');
+                            base.log.sections[elemObj.index] = [base.log.sections[elemObj.index][0]].concat(sectionText);
+                        } else {
+                           base.log.sections[elemObj.index] =  this.innerText.split('\n')
+                        }
+                        break;
+                    case 'sig':
+                        base.log.sig = this.innerText
+                        break;
+                };
+            }).hover(function(e) { 
+                $(this).css('background-color',e.type === "mouseenter" ? 'rgba( 255, 255, 255, 0.7)':'transparent');
+            });
+            $('.autosuggest').focus(function () {
                 var focusedElement = this;
                 that.checkInterval = setInterval(function () { base._checkCursorPosition(focusedElement); }, 250);
             }).blur(function () {
                 clearInterval(that.checkInterval);
             });
+            $(':focus').css('background-color', 'rgba( 255, 255, 255, 0.7)');
 //            this.$worklog = $('textarea', $(this.element));
 //            this.$worklog.css({
 //                width: this.options.width,
@@ -252,6 +328,30 @@
 //                    autoFocus: this.options.autoFocus
 //                })
 //            }
+        },
+        _setTitleFormat: function () {
+            $.each(base.log.sections, function (index, value) {
+                if (base.log.firstLineTitle){
+                    switch(base.options.format) {
+                        case "html":
+                            var titleString = value[0];
+                            if (base.options.title.italics) {
+                                titleString = '<i>' + titleString + '</i>';
+                            }
+                            if (base.options.title.underline) {
+                                titleString = '<u>' + titleString + '</u>';
+                            }
+                            if (base.options.title.bold) {
+                                titleString = '<b>' + titleString + '</b>';
+                            }
+                            $('#' + base.nameSpace+ 'title' + index).html('<font color="' + base.options.title.color + '">' + titleString + '</font>');
+                            break;
+                        case "plain":
+                            break;
+                    }
+                }
+                
+            });
         },
         _loadLog: function () {
             if (debug) console.log("loadLog");

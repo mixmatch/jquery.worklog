@@ -3,7 +3,7 @@ $(document).ready(function () {
     $('#worklog').worklog({
         // These are the defaults.
         width: "650px",
-        height: "200px",
+        height: "300px",
         background: "rgba(255,255,255,0.8)",
         format: "html",
         titleColor: "#000000",
