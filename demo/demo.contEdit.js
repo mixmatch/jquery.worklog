@@ -6,7 +6,12 @@ $(document).ready(function () {
         height: "200px",
         background: "rgba(255,255,255,0.8)",
         format: "html",
-        titleColor: "#000000",
+        title: {
+            color: "#557799",
+            bold: true,
+            underline: true,
+            italics: false
+        },
         template: {
             name: "Default",
             firstLineTitle: true,
