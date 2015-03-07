@@ -44,7 +44,9 @@
 			this.lines = [];
 			this.log = $.extend(true, {}, this.options.template);
 			this.checkInterval = null;
-			this.currLine = 1;
+			this.currentLine = null;
+            this.currentElem = null;
+            this.showSuggest = false;
 			this.lineHeight = 15;
             this.$element = $(this.element);
 			this.element.addClass(this.nameSpace);
@@ -57,20 +59,20 @@
 			//this.element.blur();
 			//this.refresh();
 		},
-		_setOption: function( key, value ) {
+		_setOption: function (key, value) {
 			this._super( key, value );
 		},
-		_setOptions: function( options ) {
+		_setOptions: function (options) {
 			this._super( options );
 			this.refresh();
 		},
-		_blur: function() {
+		_blur: function () {
 			this.$worklog.blur();
 		},
 		_constrain: function( value ) {
 
 		},
-		_destroy: function() {
+		_destroy: function () {
 			this.element
 				.removeClass(this.nameSpace)
 				.text( "" );
@@ -86,36 +88,50 @@
                 });
             }
         },
-        _checkCursorPosition: function (elem) {
-//            if (debug) console.log("checkCursorPosition");
-            if (debug) console.log(window.getSelection());
-            if (debug) console.log(window.getSelection().getRangeAt(0));
-//            if (debug) console.log(elem.innerText);
-//            if (debug) console.log($(elem)[0].innerText);
-//            var t = elem;
-//            var tArray = t.innerText.split("\n");
-//            var position = t.innerText.substr(0, t.selectionStart).split("\n").length - 1;
-//            if (debug) console.log(t.selectionStart);
-//            var autocompletePos;
-//            if (position !== this.currLine) {
-//                if (debug) console.log(position);
-//                this.currLine = position;
-//                autocompletePos = parseInt($(elem).css("padding-top"), 10) + ((this.currLine + 1) *  this.lineHeight);
-//                if (this.options.autoSuggest) {
-//                    //$(elem).autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
-//                }
-//            } else if (tArray[position] !== this.lines[position]) {
-//                if (debug) console.log(tArray[position]);
-//                this.edited = true;
-//                this.lastWorklogEdit = new Date();
-//                this.lines = t.innerText.split("\n");
-//                autocompletePos = parseInt($(elem).css("padding-top"), 10) + ((this.currLine+1) *  this.lineHeight);
-//                if (debug) console.log(autocompletePos);
-//                if (this.options.autoSuggest) {
-//                    //$(elem).autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
-//                }
-//            }
-//            return position;
+        _prevEditable: function (elem) {
+//            if (debug) console.log(elem);
+            var prevElem = $(elem).prev('.editable');
+            if (prevElem.length){
+                return prevElem;
+            } else if ($(elem).prev().length) {
+                return base._prevEditable($(elem).prev());
+            } else if ($(elem).parent().length) {
+                return base._prevEditable($(elem).parent());
+            } else {
+                return false;   
+            }
+        },
+        _nextEditable: function (elem) {
+//            if (debug) console.log(elem);
+            var nextElem = $(elem).next('.editable');
+            if (nextElem.length){
+                return nextElem;
+            } else if ($(elem).next().length) {
+                return base._nextEditable($(elem).next());
+            } else if ($(elem).parent().length) {
+                return base._nextEditable($(elem).parent());
+            } else {
+                return false;   
+            }
+        },
+        _checkCursorPosition: function () {
+            var elem = base.focusedElem;
+            if (this.options.autoSuggest && elem != null) {
+                var tArray = elem.innerText.split("\n");
+                var position = tArray.indexOf(window.getSelection().getRangeAt(0).endContainer.textContent);
+                var lineHeight = parseInt($(elem).css("height"), 10)/(tArray.length || 1);
+                var autocompletePos;
+                if (position !== this.currentLine || this.showSuggest) {
+                    if (debug) console.log(lineHeight);
+                    if (debug) console.log(position);
+                    if (debug) console.log(window.getSelection().getRangeAt(0));
+                    if (debug) console.log(window.getSelection().getRangeAt(0).endContainer.textContent);
+                    autocompletePos = parseInt($(elem).css("padding-top"), 10) + ((position + 1) *  lineHeight);
+                    $(elem).autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
+                    this.currentLine = position;
+                    this.showSuggest = false;
+                }
+            }
         },
         _createTextArea: function () {
             if (debug) console.log("createTextArea");
@@ -228,7 +244,58 @@
                     }).data({type: 'sig'}).html('<b>' + logObject.sig + '</b>'));
                 }
             }
-            $('.editable').attr('contentEditable', 'true').on( "input", function() {
+            $('.editable').attr('contentEditable', 'true').css('white-space', 'pre').keydown(function(event) {
+                var keyCode = $.ui.keyCode;
+                var action = null;
+                if (event.keyCode == keyCode.UP) {
+                    //if (debug) console.log("Up");
+                    event.stopImmediatePropagation();
+                    if (base.currentLine === 0 || base.currentLine == null) {
+                        var currentSelection = window.getSelection();
+                        var range = document.createRange();
+                        var elem = currentSelection.getRangeAt(0).startContainer.parentElement;
+                        var caretStart = currentSelection.getRangeAt(0).startOffset;
+                        var prevElem = base._prevEditable(elem);
+                        if (prevElem) {
+                            prevElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
+                            var currentNode = window.getSelection().getRangeAt(0).startContainer
+                            range.setStart(currentNode, Math.min(caretStart, currentNode.length));
+                            range.collapse(true);
+                            setTimeout ( function () {
+                                var sel = window.getSelection();
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                            }, 1);
+                        }
+                    }
+                }
+                if (event.keyCode == keyCode.DOWN) {
+                    //if (debug) console.log("Down");
+                    event.stopImmediatePropagation();
+                    var lastLine = base.focusedElem.innerText.split('\n').length - 1;
+                    if (debug) console.log(base.currentLine);
+                    if (debug) console.log(lastLine);
+                    if (debug) console.log(base.focusedElem.innerText.split('\n'));
+                    if (base.currentLine === lastLine || base.currentLine == null) {
+                        var currentSelection = window.getSelection();
+                        var range = document.createRange();
+                        var elem = currentSelection.getRangeAt(0).startContainer.parentElement;
+                        var caretStart = currentSelection.getRangeAt(0).startOffset;
+                        var nextElem = base._nextEditable(elem);
+                        if (nextElem) {
+                            nextElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
+                            var currentNode = window.getSelection().getRangeAt(0).startContainer
+                            range.setStart(currentNode, Math.min(caretStart, currentNode.length));
+                            range.collapse(true);
+                            setTimeout ( function () {
+                                var sel = window.getSelection();
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                            }, 1);
+                        }
+                    }
+                }
+            }).on( "input", function() {
                 if (debug) { console.log(this.innerText); }
                 if (debug) { console.log($(this).data()); }
                 var elemObj = $(this).data();
@@ -248,86 +315,75 @@
                         base.log.sig = this.innerText
                         break;
                 };
+                base.showSuggest = true;
             }).hover(function(e) { 
-                $(this).css('background-color',e.type === "mouseenter" ? 'rgba( 255, 255, 255, 0.7)':'transparent');
-            });
-            $('.autosuggest').focus(function () {
-                var focusedElement = this;
-                that.checkInterval = setInterval(function () { base._checkCursorPosition(focusedElement); }, 250);
+                if (e.type === "mouseenter") {
+                    $(this).css('background-color', 'rgba( 255, 255, 255, 0.7)');
+                } else if ($(base.focusedElem).attr('id') != $(this).attr('id')){
+                    $(this).css('background-color', 'transparent');
+                }
+            }).focus(function () {
+                base.showSuggest = false;
+                $(this).css('background-color', 'rgba( 255, 255, 255, 0.7)');
+                base.focusedElem = this;
             }).blur(function () {
-                clearInterval(that.checkInterval);
+                $(this).css('background-color', 'transparent');
+                base.currentLine = null;
+                base.focusedElem = null;
             });
-            $(':focus').css('background-color', 'rgba( 255, 255, 255, 0.7)');
-//            this.$worklog = $('textarea', $(this.element));
-//            this.$worklog.css({
-//                width: this.options.width,
-//                height: this.options.height,
-//                background: this.options.background,
-//                resize: 'none'
-//            }).attr({
-//                minWidth: this.options.width
-//            }).autogrow({
-//                vertical : true,
-//                horizontal : true,
-//                fixMinHeight: this.options.fixMinHeight
-//            }).focus(function () {
-//                that.checkInterval = setInterval(function () { that._checkCursorPosition.apply(that); }, 250);
-//            }).blur(function () {
-//                clearInterval(that.checkInterval);
-//            }).keydown(function(event) {
-//                var keyCode = $.ui.keyCode;
-//                if (event.keyCode == keyCode.UP || event.keyCode == keyCode.DOWN) {
-//                      event.stopImmediatePropagation();
-//                }
-//            });
-//            if (this.options.autoSuggest) {
-//                this.$worklog.autocomplete({
-//                    source: function (request, response) {
-//                        var term = request.term.trim();
-//                        if (debug) console.log(term);
-//                        var result = [];
-//                        var firstWord = [];
-//                        var inLine = [];
-//                        $.each(that.autoSuggestLines, function (index, value) {
-//                            if (firstWord.length >= that.options.suggestLength) {
-//                                if (debug) console.log("Max suggestions reached");
-//                                //break out of $.each
-//                                return false;
-//                            }
-//                            var termIndex = value.toLowerCase().indexOf(term.toLowerCase());
-//                            if (termIndex === 0) {
-//                                if (value.trim() === term) {
-//                                    //firstWord.unshift(value);
-//                                } else {
-//                                    firstWord.push(value);
-//                                }
-//                            } else if (termIndex > 0) {
-//                                inLine.push(value);
-//                            }
-//                        });
-//                        //suggestLength
-//                        result = result.concat(firstWord.slice(0, that.options.suggestLength)).concat(inLine.slice(0, that.options.suggestLength - result.length));
-//                        if (result.length === 1 && result[0].trim() === term) {
-//                            result = [];
-//                        }
-//                        response(result);//this will show in the selection box.
-//                        //response(term);
-//                    },
-//                    focus: function( event, ui ) {
-//                        return false;
-//                    },
-//                    select: function( event, ui ) {
-//                        if (debug) console.log("Select");
-//                        //console.log(event);
-//                        if (debug) console.log(ui.item.value);
-//                        that.setCurrentLine(ui.item.value);
-//                        return false;
-//                    },
-//                    position: { my : "right top", at: "right bottom" },
-//                    delay: 0,
-//                    autoFocus: this.options.autoFocus
-//                })
-//            }
+            if (this.options.autoSuggest) {
+                $('.autosuggest').autocomplete({
+                    source: function (request, response) {
+                        var term = request.term.trim();
+                        if (debug) console.log(term);
+                        var result = [];
+                        var firstWord = [];
+                        var inLine = [];
+                        $.each(that.autoSuggestLines, function (index, value) {
+                            if (firstWord.length >= that.options.suggestLength) {
+                                if (debug) console.log("Max suggestions reached");
+                                //break out of $.each
+                                return false;
+                            }
+                            var termIndex = value.toLowerCase().indexOf(term.toLowerCase());
+                            if (termIndex === 0) {
+                                if (value.trim() === term) {
+                                    //firstWord.unshift(value);
+                                } else {
+                                    firstWord.push(value);
+                                }
+                            } else if (termIndex > 0) {
+                                inLine.push(value);
+                            }
+                        });
+                        //suggestLength
+                        result = result.concat(firstWord.slice(0, that.options.suggestLength)).concat(inLine.slice(0, that.options.suggestLength - result.length));
+                        if (result.length === 1 && result[0].trim() === term) {
+                            result = [];
+                        }
+                        response(result);//this will show in the selection box.
+                        //response(term);
+                    },
+                    focus: function( event, ui ) {
+                        return false;
+                    },
+                    select: function( event, ui ) {
+                        if (debug) console.log("Select");
+                        //console.log(event);
+                        if (debug) console.log(ui.item.value);
+                        that.setCurrentLine(ui.item.value, this);
+                        return false;
+                    },
+                    position: { my : "right top", at: "right bottom" },
+                    delay: 0,
+                    autoFocus: this.options.autoFocus
+                }).focus(function () {
+                    that.checkInterval = setInterval(function () { base._checkCursorPosition(); }, 250);
+                }).blur(function () {
+                    clearInterval(that.checkInterval);
+                });
+            }
+            //$(':focus').css('background-color', 'rgba( 255, 255, 255, 0.7)');
         },
         _setTitleFormat: function () {
             $.each(base.log.sections, function (index, value) {
@@ -430,20 +486,34 @@
 			this.$worklog[0].setSelectionRange(newPos, newPos);
 			this.$worklog.trigger("update.autogrow");
 		},
-        setLine: function (lineNum, value) {
-            var cursorPos = this.$worklog[0].selectionStart;
-			if (Array.isArray(value)) {
-				this.lines = this.lines.slice(0, lineNum).concat(value).concat(this.lines.slice(lineNum + 1));
-			} else {
-				this.lines[lineNum] = value;
-			}
-            this.$worklog.val(this.lines.join('\n'));
-            var newPos = cursorPos + this.$worklog.val().substring(cursorPos).indexOf("\n");
-            this.$worklog[0].setSelectionRange(newPos, newPos);
-			this.$worklog.trigger("update.autogrow");
+        setLine: function (lineNum, value, elem) {
+            if (debug) { console.log('Setting Line'); }
+            var elemObj = $(elem).data();
+            if (debug) { console.log(elemObj); }
+            var newHTML;
+            switch (elemObj.type){
+                case 'title':
+                    base.log.sections[elemObj.index][0] = value;
+                    $(elem).text(value);
+                    break;
+                case 'section':
+                    var sectionText = elem.innerText.split('\n');
+                    sectionText[lineNum] = value;
+                    if(base.log.firstLineTitle) {
+                        base.log.sections[elemObj.index] = [base.log.sections[elemObj.index][0]].concat(sectionText);
+                    } else {
+                       base.log.sections[elemObj.index] =  sectionText;
+                    }
+                    $(elem).html(sectionText.join("<br>"));
+                    break;
+                case 'sig':
+                    base.log.sig = value;
+                    $(elem).text(value);
+                    break;
+            };
         },
-        setCurrentLine: function (value) {
-			this.setLine(this.currLine, value);
+        setCurrentLine: function (value, elem) {
+			this.setLine(this.currentLine, value, elem);
         },
 		replace: function (findVal, replaceVal) {
 			//before = before.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

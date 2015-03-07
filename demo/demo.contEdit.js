@@ -2,7 +2,7 @@ $(document).ready(function () {
 //    $('#worklog').worklog();  
     $('#worklog').worklog({
         // These are the defaults.
-        width: "650px",
+        width: "100%",
         height: "100%",
         background: "rgba(255,255,255,0.8)",
         format: "html",
