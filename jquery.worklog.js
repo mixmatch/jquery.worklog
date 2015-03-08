@@ -214,6 +214,7 @@
                 })).append($('<input>', {
                     'id':this.nameSpace + 'titleColor',
                     'type':'color',
+                    'val': options.title.color,
                     'css':{'width':'16px', 'height':'16px', 'margin-left':'10px', 'padding': '0px 1px'},
                     'change': function () {
                         options.title.color = $(this).val();
@@ -229,36 +230,7 @@
                 
                 this.$worklogBody = $('#' + this.nameSpace + 'body');
                 $.each(logObject.sections, function (index, value){
-                    //console.log(value);
-                    if (logObject.firstLineTitle){
-                        switch(options.format) {
-                            case "html":
-                                var titleString = value.shift();
-                                if (options.title.italics) {
-                                    titleString = '<i>' + titleString + '</i>';
-                                }
-                                if (options.title.underline) {
-                                    titleString = '<u>' + titleString + '</u>';
-                                }
-                                if (options.title.bold) {
-                                    titleString = '<b>' + titleString + '</b>';
-                                }
-                                base.$worklogBody.append($('<div>', {
-                                    'id':base.nameSpace+ 'title' + index,
-                                    'class':'editable'
-                                }).append($('<font color="' + options.title.color + '">').html(titleString)
-                                ).data({type: 'title', index: index, base: base}));
-                                break;
-                            case "plain":
-                                break;
-                        }
-                    }
-                    if (value.length){
-                        base.$worklogBody.append($('<div>', {
-                            'id':base.nameSpace + 'section' + index,
-                            'class':'editable autosuggest'
-                        }).data({type: 'section', index: index, base: base}).html(value.join("<br>"))).append('<br>');
-                    }
+                    base.addSection.apply(base, [index, value]);
                 });
                 if (logObject.sig !=  null){
                     base.$worklogBody.append($('<div>', {
@@ -438,50 +410,135 @@
                 
             });
         },
-		findLine: function (search, startIndex, endIndex) {
-			//search = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        addSection: function (index, value) {
+            //console.log(value);
+            var base = this;
+            var logObj = this.log;
+            var options = this.options;
+            if (logObj.firstLineTitle){
+                switch(options.format) {
+                    case "html":
+                        var titleString = value.shift();
+                        if (options.title.italics) {
+                            titleString = '<i>' + titleString + '</i>';
+                        }
+                        if (options.title.underline) {
+                            titleString = '<u>' + titleString + '</u>';
+                        }
+                        if (options.title.bold) {
+                            titleString = '<b>' + titleString + '</b>';
+                        }
+                        base.$worklogBody.append($('<div>', {
+                            'id':base.nameSpace+ 'title' + index,
+                            'class':'editable'
+                        }).append($('<font color="' + options.title.color + '">').html(titleString)
+                        ).data({type: 'title', index: index, base: base}));
+                        break;
+                    case "plain":
+                        break;
+                }
+            }
+            if (value.length){
+                base.$worklogBody.append($('<div>', {
+                    'id':base.nameSpace + 'section' + index,
+                    'class':'editable autosuggest'
+                }).data({type: 'section', index: index, base: base}).html(value.join("<br>"))).append('<br>');
+            }
+        },
+        refreshSection: function (index) {
+            console.log(this.log.sections[index]);
+            var base = this;
+            var logObj = $.extend(true, {}, this.log);
+            var section = logObj.sections[index];
+            console.log(section);
+            var options = this.options;
+            if (logObj.firstLineTitle){
+                switch(options.format) {
+                    case "html":
+                        var titleString = section.shift();
+                        if (options.title.italics) {
+                            titleString = '<i>' + titleString + '</i>';
+                        }
+                        if (options.title.underline) {
+                            titleString = '<u>' + titleString + '</u>';
+                        }
+                        if (options.title.bold) {
+                            titleString = '<b>' + titleString + '</b>';
+                        }
+                        $('#' + base.nameSpace+ 'title' + index).html($('<font color="' + options.title.color + '">').html(titleString));
+                        break;
+                    case "plain":
+                        break;
+                }
+            }
+            if (section.length){
+                $('#' + base.nameSpace + 'section' + index).html(section.join("<br>"));
+            }
+        },
+        findLineInSection: function (search, sectionNum, startIndex, endIndex) {
 			if (search === '') {
 				search = '^$';
 			}
 			var re = new RegExp(search);
-			startIndex = startIndex != null ? startIndex : 0;
-			endIndex = endIndex != null ? endIndex : this.lines.length;
-			var lineNum = false;
+            var section = this.log.sections[sectionNum];
+            startIndex = startIndex != null ? startIndex : 0;
+            endIndex = endIndex != null ? endIndex : section.length;
+            var lineNum = false;
 			if (typeof startIndex === 'string') {
-				startIndex = this.findLine(startIndex);
+				startIndex = this.findLineInSection(startIndex, sectionNum);
 				if (startIndex === false) {
 					return false;
 				}
 				startIndex++;
 			}
 			if (typeof endIndex === 'string') {
-				endIndex = this.findLine(endIndex);
+				endIndex = this.findLineInSection(endIndex, sectionNum);
 				if (endIndex === false) {
 					return false;
 				}
 			}
-			$.each(this.lines, function (index, value){
+            $.each(section, function (index, value){
 				if ((re.test(value)) && (index >= startIndex) && (index < endIndex)) {
 				//if ((value === search || value.indexOf(search) !== -1) && (index >= startIndex) && (index < endIndex)) {
 					lineNum = index;
 					return false;
 				}
-			});
-			return lineNum;
+            });
+            return lineNum;
+        },
+		findLine: function (search, sectionNum, startIndex, endIndex) {
+            base = this;
+            var logObj = this.log;
+            var lineNum = false;
+            if (sectionNum != null) {
+                lineNum = this.findLineInSection(search, sectionNum, startIndex, endIndex);
+            } else {
+                $.each(this.log.sections, function (index, value){
+                    lineNum = base.findLineInSection.apply(base, [search, index, startIndex, endIndex]);
+                    if (lineNum !== false) {
+                        sectionNum = index;
+                        return false;
+                    }
+                });
+            }
+			return lineNum !== false ? {section: sectionNum, line: lineNum} : false;
 		},
-		addLine: function (value, lineNum) {
-			lineNum = lineNum != null ? lineNum : this.lines.length;
-            var cursorPos = this.$worklog[0].selectionStart;
+		addLine: function (value, sectionNum, lineNum) {
+			sectionNum = sectionNum != null ? sectionNum : this.log.sections.length -1;
+            var section = this.log.sections[sectionNum];
+			lineNum = lineNum != null ? lineNum : section.length;
+            //var cursorPos = this.$worklog[0].selectionStart;
 			if (Array.isArray(value)) {
-				this.lines = this.lines.slice(0, lineNum).concat(value).concat(this.lines.slice(lineNum));
+				section = section.slice(0, lineNum).concat(value).concat(section.slice(lineNum));
 				
 			} else {
-				this.lines.splice(lineNum, 0, value);
+				section.splice(lineNum, 0, value);
 			}
-            this.$worklog.val(this.lines.join('\n'));
-			var newPos = cursorPos + this.$worklog.val().substring(cursorPos).indexOf("\n");
-			this.$worklog[0].setSelectionRange(newPos, newPos);
-			this.$worklog.trigger("update.autogrow");
+            console.log(sectionNum);
+            this.refreshSection(sectionNum);
+//            this.$worklog.val(this.lines.join('\n'));
+//			var newPos = cursorPos + this.$worklog.val().substring(cursorPos).indexOf("\n");
+//			this.$worklog[0].setSelectionRange(newPos, newPos);
 		},
         setLine: function (lineNum, value, elem) {
             if (debug) { console.log('Setting Line'); }
@@ -521,10 +578,10 @@
 			this.lines = worklogVal.split("\n");
 			this.$worklog.trigger("update.autogrow");
 		},
-		replaceLine: function (findVal, replaceVal, startIndex, endIndex) {
+		replaceLine: function (findVal, replaceVal, sectionNum, startIndex, endIndex) {
 			//findVal = findVal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 			//var re = new RegExp(findVal);
-			var lineNum = this.findLine(findVal, startIndex, endIndex);
+			var lineNum = this.findLine(findVal, sectionNum, startIndex, endIndex);
 			if (lineNum !== false) {
 				this.setLine(lineNum, replaceVal);
 				return lineNum;
