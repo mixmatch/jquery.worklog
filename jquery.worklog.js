@@ -4,8 +4,10 @@
  *  Author: Daniel Petty
  *  License: This is free and unencumbered software released into the public domain.
  */
+/*jslint browser: true, devel: true, nomen: true, eqeq: true, plusplus: true, sloppy: true, white: true, maxerr: 999 */
+/*global jQuery, $*/
 
- ;(function ( $, window, document, undefined ) {
+ ; (function ($, window, document, undefined) {
     var debug = true;
     $.widget( "mixmatch.worklog" , {
         //Options to be used as defaults
@@ -28,12 +30,12 @@
             suggestLength: 24
         },
 		_create: function() {
-			if (debug) console.log("_create");
-			if (debug) console.log(this.eventNamespace);
-			if (debug) console.log(this.namespace);
-			if (debug) console.log(this.widgetEventPrefix);
-			if (debug) console.log(this.widgetFullName);
-			if (debug) console.log(this.widgetName);
+			if (debug) { console.log("_create"); }
+			if (debug) { console.log(this.eventNamespace); }
+			if (debug) { console.log(this.namespace); }
+			if (debug) { console.log(this.widgetEventPrefix); }
+			if (debug) { console.log(this.widgetFullName); }
+			if (debug) { console.log(this.widgetName); }
             this.nameSpace = this.eventNamespace.replace(/[.]/g, '');
 			this.edited = false;
 			this.lastWorklogEdit = null;
@@ -47,6 +49,7 @@
 			this.lineHeight = 15;
             this.$element = $(this.element);
 			this.element.addClass(this.nameSpace);
+			this.element.addClass(this.widgetName);
             this._setAutoSuggestLines();
             this._createTextArea();
 			//this.refresh();
@@ -70,7 +73,7 @@
 				.text( "" );
 		},
 		_setAutoSuggestLines: function () {
-            if (debug) console.log("setAutoSuggestLines");
+            if (debug) { console.log("setAutoSuggestLines"); }
             //this.autoSuggestLines = new Array();
             if (this.options.autoSuggest) {
                 var base = this;
@@ -106,7 +109,7 @@
                 return false;   
             }
         },
-        _getCaretOffsetHTML(element) {
+        _getCaretOffsetHTML: function (element) {
             var caretOffset = 0;
             var doc = element.ownerDocument || element.document;
             var win = doc.defaultView || doc.parentWindow;
@@ -155,7 +158,7 @@
             }
         },
         _createTextArea: function () {
-            if (debug) console.log("createTextArea");
+            if (debug) { console.log("createTextArea"); }
             //for callbacks that need this scope
             var base = this;
             var templateHtml = '';
@@ -220,8 +223,8 @@
                 ).append($('<div>', {
                     'id':this.nameSpace + 'body'
                 }));
-                $('.ui-button').css({"height": "14px", "width": "24px"});
-                $('.ui-button-text').css({"padding": "0px 2px", "margin": "0px auto", 'font-size': '0.9em'});
+                $('.ui-button', '#' + this.nameSpace + 'header').css({"height": "14px", "width": "24px"});
+                $('.ui-button-text', '#' + this.nameSpace + 'header').css({"padding": "0px 2px", "margin": "0px auto", 'font-size': '0.9em'});
                 
                 this.$worklogBody = $('#' + this.nameSpace + 'body');
                 $.each(logObject.sections, function (index, value){
@@ -237,18 +240,19 @@
             $('.editable').attr('contentEditable', 'true').css('white-space', 'pre').keydown(function(event) {
                 var keyCode = $.ui.keyCode;
                 var action = null;
+				var currentSelection, range, elem, caretStart,currentNode;
                 if (event.keyCode == keyCode.UP) {
                     //if (debug) console.log("Up");
                     event.stopImmediatePropagation();
                     if (base.currentLine === 0 || base.currentLine == null) {
-                        var currentSelection = window.getSelection();
-                        var range = document.createRange();
-                        var elem = currentSelection.getRangeAt(0).startContainer.parentElement;
-                        var caretStart = currentSelection.getRangeAt(0).startOffset;
+                        currentSelection = window.getSelection();
+                        range = document.createRange();
+                        elem = currentSelection.getRangeAt(0).startContainer.parentElement;
+                        caretStart = currentSelection.getRangeAt(0).startOffset;
                         var prevElem = base._prevEditable.apply(base, [base.focusedElem]);
                         if (prevElem) {
                             prevElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
-                            var currentNode = window.getSelection().getRangeAt(0).startContainer
+                            currentNode = window.getSelection().getRangeAt(0).startContainer;
                             range.setStart(currentNode, Math.min(caretStart, currentNode.length));
                             range.collapse(true);
                             setTimeout ( function () {
@@ -264,14 +268,14 @@
                     //var lastLine = base.focusedElem.innerText.split('\n').length - 1;
                     var lastLine = $(base.focusedElem).html().replace(/(.*)<br>$/i, "$1").split("<br>").length - 1;
                     if (base.currentLine === lastLine || base.currentLine == null) {
-                        var currentSelection = window.getSelection();
-                        var range = document.createRange();
-                        var elem = currentSelection.getRangeAt(0).startContainer.parentElement;
-                        var caretStart = currentSelection.getRangeAt(0).startOffset;
+                        currentSelection = window.getSelection();
+                        range = document.createRange();
+                        elem = currentSelection.getRangeAt(0).startContainer.parentElement;
+                        caretStart = currentSelection.getRangeAt(0).startOffset;
                         var nextElem = base._nextEditable.apply(base, [base.focusedElem]);
                         if (nextElem) {
                             nextElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
-                            var currentNode = window.getSelection().getRangeAt(0).startContainer
+                            currentNode = window.getSelection().getRangeAt(0).startContainer
                             range.setStart(currentNode, Math.min(caretStart, currentNode.length));
                             range.collapse(true);
                             setTimeout ( function () {
@@ -296,6 +300,7 @@
                         base.log.sections[elemObj.index][0] = this.innerText;
                         break;
                     case 'section':
+						$(this).find('*:not(br)').contents().unwrap();
                         var sectionText = $(this).html().replace(/(.*)<br>$/i, "$1").split("<br>");
                         if(base.log.firstLineTitle) {
                             base.log.sections[elemObj.index] = [base.log.sections[elemObj.index][0]].concat(sectionText);
@@ -304,9 +309,9 @@
                         }
                         break;
                     case 'sig':
-                        base.log.sig = this.innerText
+                        base.log.sig = this.innerText;
                         break;
-                };
+                }
                 base.showSuggest = true;
             }).hover(function(e) { 
                 if (e.type === "mouseenter") {
@@ -327,13 +332,13 @@
                 $('.autosuggest').autocomplete({
                     source: function (request, response) {
                         var term = request.term.trim();
-                        if (debug) console.log(term);
+                        if (debug) { console.log(term); }
                         var result = [];
                         var firstWord = [];
                         var inLine = [];
                         $.each(base.autoSuggestLines, function (index, value) {
                             if (firstWord.length >= options.suggestLength) {
-                                if (debug) console.log("Max suggestions reached");
+                                if (debug) { console.log("Max suggestions reached"); }
                                 //break out of $.each
                                 return false;
                             }
@@ -360,9 +365,9 @@
                         return false;
                     },
                     select: function( event, ui ) {
-                        if (debug) console.log("Select");
+                        if (debug) { console.log("Select"); }
                         //console.log(event);
-                        if (debug) console.log(ui.item.value);
+                        if (debug) { console.log(ui.item.value); }
                         base.setCurrentLine(ui.item.value, $(this).data().index);
                         return false;
                     },
@@ -506,7 +511,7 @@
         },
 		findLine: function (search, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Finding Line'); }
-            base = this;
+            var base = this;
             var logObj = this.log;
             var lineNum = false;
             if (sectionNum != null) {
