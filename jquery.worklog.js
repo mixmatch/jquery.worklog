@@ -39,7 +39,6 @@
 			this.lastWorklogEdit = null;
 			this.inactiveInterval = [];
 			this.autoSuggestLines = [];
-			this.lines = [];
 			this.log = $.extend(true, {}, this.options.template);
 			this.checkInterval = null;
 			this.currentLine = null;
@@ -50,10 +49,6 @@
 			this.element.addClass(this.nameSpace);
             this._setAutoSuggestLines();
             this._createTextArea();
-//			this.lineHeight = parseInt(this.$worklog.css("height"), 10)/(this.lines.length || 1);
-//            if (debug) { console.log(this); }
-//			this._delay( this._blur, 1000 );
-			//this.element.blur();
 			//this.refresh();
 		},
 		_setOption: function (key, value) {
@@ -368,7 +363,7 @@
                         if (debug) console.log("Select");
                         //console.log(event);
                         if (debug) console.log(ui.item.value);
-                        base.setCurrentLine(ui.item.value, this);
+                        base.setCurrentLine(ui.item.value, $(this).data().index);
                         return false;
                     },
                     position: { my : "right top", at: "right bottom" },
@@ -383,6 +378,7 @@
             //$(':focus').css('background-color', 'rgba( 255, 255, 255, 0.7)');
         },
         _setTitleFormat: function () {
+            if (debug) { console.log('Setting Title Format'); }
             if (debug) { console.log(this.log); }
             var logObject = this.log;
             var options = this.options;
@@ -411,6 +407,7 @@
             });
         },
         addSection: function (index, value) {
+            if (debug) { console.log('Adding Section'); }
             //console.log(value);
             var base = this;
             var logObj = this.log;
@@ -446,11 +443,11 @@
             }
         },
         refreshSection: function (index) {
+            if (debug) { console.log('Refreshing Section'); }
             console.log(this.log.sections[index]);
             var base = this;
             var logObj = $.extend(true, {}, this.log);
             var section = logObj.sections[index];
-            console.log(section);
             var options = this.options;
             if (logObj.firstLineTitle){
                 switch(options.format) {
@@ -476,6 +473,7 @@
             }
         },
         findLineInSection: function (search, sectionNum, startIndex, endIndex) {
+            if (debug) { console.log('Finding Line In Section'); }
 			if (search === '') {
 				search = '^$';
 			}
@@ -507,6 +505,7 @@
             return lineNum;
         },
 		findLine: function (search, sectionNum, startIndex, endIndex) {
+            if (debug) { console.log('Finding Line'); }
             base = this;
             var logObj = this.log;
             var lineNum = false;
@@ -524,6 +523,7 @@
 			return lineNum !== false ? {section: sectionNum, line: lineNum} : false;
 		},
 		addLine: function (value, sectionNum, lineNum) {
+            if (debug) { console.log('Adding Line'); }
 			sectionNum = sectionNum != null ? sectionNum : this.log.sections.length -1;
             var section = this.log.sections[sectionNum];
 			lineNum = lineNum != null ? lineNum : section.length;
@@ -536,54 +536,42 @@
 			}
             console.log(sectionNum);
             this.refreshSection(sectionNum);
-//            this.$worklog.val(this.lines.join('\n'));
-//			var newPos = cursorPos + this.$worklog.val().substring(cursorPos).indexOf("\n");
-//			this.$worklog[0].setSelectionRange(newPos, newPos);
 		},
-        setLine: function (lineNum, value, elem) {
+        setLine: function (lineNum, value, sectionNum) {
             if (debug) { console.log('Setting Line'); }
-            var elemObj = $(elem).data();
-            if (debug) { console.log(elemObj); }
-            var logObj = this.log;
-            var newHTML;
-            switch (elemObj.type){
-                case 'title':
-                    logObj.sections[elemObj.index][0] = value;
-                    $(elem).text(value);
-                    break;
-                case 'section':
-                    var sectionText = elem.innerText.split('\n');
-                    sectionText[lineNum] = value;
-                    if(logObj.firstLineTitle) {
-                        logObj.sections[elemObj.index] = [logObj.sections[elemObj.index][0]].concat(sectionText);
-                    } else {
-                       logObj.sections[elemObj.index] =  sectionText;
-                    }
-                    $(elem).html(sectionText.join("<br>"));
-                    break;
-                case 'sig':
-                    logObj.sig = value;
-                    $(elem).text(value);
-                    break;
-            };
+            this.log.sections[sectionNum][lineNum] = value;
+            this.refreshSection(sectionNum);
         },
-        setCurrentLine: function (value, elem) {
-			this.setLine.apply(this, [this.currentLine, value, elem]);
+        setCurrentLine: function (value, section) {
+            if (debug) { console.log('Setting Current Line'); }
+            var lineNum = this.currentLine;
+            if (this.log.firstLineTitle) {
+                lineNum++;
+            }
+			this.setLine.apply(this, [lineNum, value, section]);
         },
-		replace: function (findVal, replaceVal) {
-			//before = before.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			var re = new RegExp(findVal);
-			var worklogVal = this.$worklog.val().replace(re, replaceVal);
-			this.$worklog.val(worklogVal);
-			this.lines = worklogVal.split("\n");
-			this.$worklog.trigger("update.autogrow");
+		replace: function (findVal, replaceVal, sectionNum, startIndex, endIndex) {
+            if (debug) { console.log('Replacing'); }
+			var lineNum = this.findLine(findVal, sectionNum, startIndex, endIndex);
+            if (debug) { console.log(lineNum); }
+			if (lineNum !== false) {
+                var re = new RegExp(findVal);
+                if (debug) { console.log(this.log.sections[lineNum.section][lineNum.line]); }
+                var oldVal = this.log.sections[lineNum.section][lineNum.line];
+                var newVal = oldVal.replace(re, replaceVal);
+				this.setLine(lineNum.line, newVal, lineNum.section);
+				return lineNum;
+			} else {
+				return false;
+			}
 		},
 		replaceLine: function (findVal, replaceVal, sectionNum, startIndex, endIndex) {
+            if (debug) { console.log('Replacing Line'); }
 			//findVal = findVal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 			//var re = new RegExp(findVal);
 			var lineNum = this.findLine(findVal, sectionNum, startIndex, endIndex);
 			if (lineNum !== false) {
-				this.setLine(lineNum, replaceVal);
+				this.setLine(lineNum.line, replaceVal, lineNum.section);
 				return lineNum;
 			} else {
 				return false;
@@ -591,7 +579,6 @@
 		},
 		toArray: function () {
             if (debug) { console.log('toArray'); }
-            if (debug) { console.log(this.log); }
             var logArray = [];
             var logObject = $.extend(true, {}, this.log);
             var options = this.options;
@@ -626,6 +613,7 @@
 			return logArray;
 		},
 		value: function () {
+            if (debug) { console.log('value'); }
 			return this.toArray().join('\n');
 		}
 	});
