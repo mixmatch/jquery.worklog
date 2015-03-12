@@ -1,3 +1,4 @@
+var suggestLength = 16;
 $(document).ready(function () {
     //$('#worklog').worklog();  
     $('#worklog').worklog({
@@ -24,11 +25,10 @@ $(document).ready(function () {
         autoSuggest: [
             {"line":"Section 1 line 1 suggestion 1 ","count":1,"lastUsed":0},
             {"line":"Section 1 line 1 suggestion 2 ","count":1,"lastUsed":0},
-            {"line":"Section 1 line 2 suggestion 1 ","count":1,"lastUsed":0},
             {"line":"Section 1 line 2 noodles ","count":1,"lastUsed":0},
             {"line":"Section 1 line 2 dragon ","count":1,"lastUsed":0}
         ],
         autoFocus: false,
-        suggestLength: 24
+        suggestLength: suggestLength
     });
 });

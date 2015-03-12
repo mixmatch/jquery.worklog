@@ -8,7 +8,7 @@
 /*global jQuery, $*/
 
  ; (function ($, window, document, undefined) {
-    var debug = true;
+    var debug = false;
     $.widget( "mixmatch.worklog" , {
         //Options to be used as defaults
         options: {
@@ -60,6 +60,36 @@
 		_setOptions: function (options) {
 			this._super( options );
 			this.refresh();
+//			var base = this;
+//			$.each(options, function (index, value) {
+//				switch (index) {
+//					case "autoFocus":
+//						break;
+//					case "autoSuggest":
+//						break;
+//					case "background":
+//						break;
+//					case "disabled":
+//						break;
+//					case "fixMinHeight":
+//						break;
+//					case "format":
+//						break;
+//					case "height":
+//						break;
+//					case "height":
+//						break;
+//					case "background":
+//						break;
+//					case "height":
+//						break;
+//					case "wdth":
+//						break;
+//				}
+//				if (debug) { console.log(index); }
+//				if (debug) { console.log(value); }
+//			});
+			//this.refresh();
 		},
 		_blur: function () {
 			this.$worklog.blur();
@@ -162,7 +192,8 @@
             //for callbacks that need this scope
             var base = this;
             var templateHtml = '';
-            var logObject = $.extend(true, {}, this.options.template);
+			var log = this.log || this.options.template;
+            var logObject = $.extend(true, {}, log);
             var options  = this.options;
             if (logObject) {
                 this.$element.css({
@@ -353,11 +384,13 @@
                                 inLine.push(value);
                             }
                         });
+						firstWord = firstWord.slice(0, options.suggestLength);
+						inLine = inLine.slice(0, options.suggestLength - firstWord.length);
                         //suggestLength
-                        result = result.concat(firstWord.slice(0, options.suggestLength)).concat(inLine.slice(0, options.suggestLength - result.length));
-                        if (result.length === 1 && result[0].trim() === term) {
-                            result = [];
-                        }
+                        result = result.concat(firstWord).concat(inLine);
+//                        if (result.length === 1 && result[0].trim() === term) {
+//                            result = [];
+//                        }
                         response(result);//this will show in the selection box.
                         //response(term);
                     },
@@ -366,7 +399,7 @@
                     },
                     select: function( event, ui ) {
                         if (debug) { console.log("Select"); }
-                        //console.log(event);
+                        //if (debug) { console.log(event); }
                         if (debug) { console.log(ui.item.value); }
                         base.setCurrentLine(ui.item.value, $(this).data().index);
                         return false;
@@ -411,9 +444,14 @@
                 
             });
         },
+		refresh: function () {
+			//this.$element.html("");
+			this.$element.text( "" );
+			this._createTextArea();
+		},
         addSection: function (index, value) {
             if (debug) { console.log('Adding Section'); }
-            //console.log(value);
+            //if (debug) { console.log(value); }
             var base = this;
             var logObj = this.log;
             var options = this.options;
@@ -449,7 +487,7 @@
         },
         refreshSection: function (index) {
             if (debug) { console.log('Refreshing Section'); }
-            console.log(this.log.sections[index]);
+            if (debug) { console.log(this.log.sections[index]); }
             var base = this;
             var logObj = $.extend(true, {}, this.log);
             var section = logObj.sections[index];
@@ -531,15 +569,22 @@
             if (debug) { console.log('Adding Line'); }
 			sectionNum = sectionNum != null ? sectionNum : this.log.sections.length -1;
             var section = this.log.sections[sectionNum];
-			lineNum = lineNum != null ? lineNum : section.length;
+			//lineNum = lineNum != null ? lineNum : section.length;
+			if (lineNum == null) {
+				if (section[section.length - 1] === "") {
+					section.pop();
+				}
+				lineNum = section.length;
+			}
             //var cursorPos = this.$worklog[0].selectionStart;
 			if (Array.isArray(value)) {
+				if (debug) { console.log('Adding Line'); }
 				section = section.slice(0, lineNum).concat(value).concat(section.slice(lineNum));
 				
 			} else {
 				section.splice(lineNum, 0, value);
 			}
-            console.log(sectionNum);
+			this.log.sections[sectionNum] = section;
             this.refreshSection(sectionNum);
 		},
         setLine: function (lineNum, value, sectionNum) {
@@ -582,44 +627,69 @@
 				return false;
 			}
 		},
-		toArray: function () {
+		toArray: function (sectionNum) {
             if (debug) { console.log('toArray'); }
             var logArray = [];
             var logObject = $.extend(true, {}, this.log);
             var options = this.options;
-            $.each(logObject.sections, function (index, value) {
-                if (logObject.firstLineTitle){
-                    switch(options.format) {
-                        case "html":
-                            var titleString = value.shift();
-                            if (options.title.italics) {
-                                titleString = '<i>' + titleString + '</i>';
-                            }
-                            if (options.title.underline) {
-                                titleString = '<u>' + titleString + '</u>';
-                            }
-                            if (options.title.bold) {
-                                titleString = '<b>' + titleString + '</b>';
-                            }
-                            logArray.push('<font color="' + options.title.color + '">' + titleString + '</font>');
-                            break;
-                        case "plain":
-                            break;
-                    }
-                }
-                if (value.length){
-                    $.merge(logArray, value);
-                    logArray.push("");
-                }
-            });
-            if (logObject.sig !=  null){
-                logArray.push('<b>' + logObject.sig + '</b>');
-            }
+			if (sectionNum == null) {
+				$.each(logObject.sections, function (index, value) {
+					if (logObject.firstLineTitle){
+						switch(options.format) {
+							case "html":
+								var titleString = value.shift();
+								if (options.title.italics) {
+									titleString = '<i>' + titleString + '</i>';
+								}
+								if (options.title.underline) {
+									titleString = '<u>' + titleString + '</u>';
+								}
+								if (options.title.bold) {
+									titleString = '<b>' + titleString + '</b>';
+								}
+								logArray.push('<font color="' + options.title.color + '">' + titleString + '</font>');
+								break;
+							case "plain":
+								break;
+						}
+					}
+					if (value.length){
+						$.merge(logArray, value);
+						logArray.push("");
+					}
+				});
+				if (logObject.sig !=  null){
+					logArray.push('<b>' + logObject.sig + '</b>');
+				}
+			} else {
+				if (logObject.firstLineTitle){
+					switch(options.format) {
+						case "html":
+							var titleString = logObject.sections[sectionNum].shift();
+							if (options.title.italics) {
+								titleString = '<i>' + titleString + '</i>';
+							}
+							if (options.title.underline) {
+								titleString = '<u>' + titleString + '</u>';
+							}
+							if (options.title.bold) {
+								titleString = '<b>' + titleString + '</b>';
+							}
+							logArray.push('<font color="' + options.title.color + '">' + titleString + '</font>');
+							break;
+						case "plain":
+							break;
+					}
+				}
+				if (logObject.sections[sectionNum].length){
+					$.merge(logArray, logObject.sections[sectionNum]);
+				}
+			}
 			return logArray;
 		},
-		value: function () {
+		value: function (sectionNum) {
             if (debug) { console.log('value'); }
-			return this.toArray().join('\n');
+			return this.toArray(sectionNum).join('\n');
 		}
 	});
 })( jQuery, window, document );
