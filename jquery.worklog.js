@@ -280,10 +280,15 @@
                         range = document.createRange();
                         elem = currentSelection.getRangeAt(0).startContainer.parentElement;
                         caretStart = currentSelection.getRangeAt(0).startOffset;
-                        var prevElem = base._prevEditable.apply(base, [base.focusedElem]);
-                        if (prevElem) {
-                            prevElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
-                            currentNode = window.getSelection().getRangeAt(0).startContainer;
+                        var $prevElem = base._prevEditable.apply(base, [base.focusedElem]);
+                        if ($prevElem) {
+                            $prevElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
+							if ($prevElem.data('type') === 'section'){
+								currentNode = $prevElem.contents().last()[0];
+							} else {
+								currentNode = window.getSelection().getRangeAt(0).startContainer;
+							}
+							if (debug) { console.log(currentNode); }
                             range.setStart(currentNode, Math.min(caretStart, currentNode.length));
                             range.collapse(true);
                             setTimeout ( function () {
@@ -303,9 +308,9 @@
                         range = document.createRange();
                         elem = currentSelection.getRangeAt(0).startContainer.parentElement;
                         caretStart = currentSelection.getRangeAt(0).startOffset;
-                        var nextElem = base._nextEditable.apply(base, [base.focusedElem]);
-                        if (nextElem) {
-                            nextElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
+                        var $nextElem = base._nextEditable.apply(base, [base.focusedElem]);
+                        if ($nextElem) {
+                            $nextElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
                             currentNode = window.getSelection().getRangeAt(0).startContainer
                             range.setStart(currentNode, Math.min(caretStart, currentNode.length));
                             range.collapse(true);
@@ -317,14 +322,38 @@
                         }
                     }
                 } else if (event.keyCode == keyCode.ENTER) {
+                    event.stopImmediatePropagation();
                     if ($(this).data('type') === 'section'){
-                        document.execCommand('insertHTML', false, '<br><br>');
+						if (debug) console.log($(this).data('index'));
+						if (debug) console.log(base.log.sections[$(this).data('index')]);
+						if (debug) console.log(base.log.sections[$(this).data('index')].length - 2);
+						if (debug) console.log(base.currentLine);
+						if (base.currentLine !== base.log.sections[$(this).data('index')].length - 2) {
+							document.execCommand('insertHTML', false, '<br><br>');
+							currentSelection = window.getSelection();
+							currentSelection.modify('move', 'backward', 'line');
+//							range = document.createRange();
+//							currentNode = currentSelection.getRangeAt(0).startContainer;
+//							var prevNode = currentNode.
+//							if (debug) console.log(currentSelection);
+//							if (debug) console.log(range);
+//							if (debug) console.log(currentNode);
+						} else {
+							document.execCommand('insertHTML', false, '<br><br>');
+						}
+//						if (base.currentLine === base.log.sections[$(this).data('index')].length - 2) {
+//							console.log('<br><br>');
+//                        	document.execCommand('insertHTML', false, '<br><br>');
+//						} else {
+//							console.log('<br>');
+//                        	document.execCommand('insertHTML', false, '<br>');
+//						}
                     }
-                    return false;
+					return false;
                 }
-            }).on( "input", function() {
-                if (debug) { console.log(this.innerText); }
-                if (debug) { console.log($(this).data()); }
+            }).on( 'input', function() {
+                //if (debug) { console.log(this.innerText); }
+                //if (debug) { console.log($(this).data()); }
                 var elemObj = $(this).data();
                 switch (elemObj.type){
                     case 'title':
