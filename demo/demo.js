@@ -17,7 +17,7 @@ $(document).ready(function () {
             name: "Default",
             firstLineTitle: true,
             sections: [ 
-                ['Section 1 Header', 'Section 1 line 1', 'Section 1 line 2'],
+                ['Section 1 Header', 'Section 1 line 1', 'Section 1 line 2', ''],
                 ['Section 2 Header', 'Section 2 line 1', 'Section 2 line 2']
             ],
             sig: "Yours truly, Bob"
@@ -30,5 +30,7 @@ $(document).ready(function () {
         ],
         autoFocus: false,
         suggestLength: suggestLength
+    }).bind( "worklogchange", function() {
+        console.log( "Changed" );
     });
 });

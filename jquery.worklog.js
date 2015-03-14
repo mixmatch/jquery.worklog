@@ -8,7 +8,7 @@
 /*global jQuery, $*/
 
  ; (function ($, window, document, undefined) {
-    var debug = false;
+    var debug = true;
     $.widget( "mixmatch.worklog" , {
         //Options to be used as defaults
         options: {
@@ -30,12 +30,12 @@
             suggestLength: 24
         },
 		_create: function() {
-			if (debug) { console.log("_create"); }
-			if (debug) { console.log(this.eventNamespace); }
-			if (debug) { console.log(this.namespace); }
-			if (debug) { console.log(this.widgetEventPrefix); }
-			if (debug) { console.log(this.widgetFullName); }
-			if (debug) { console.log(this.widgetName); }
+//			if (debug) { console.log("_create"); }
+//			if (debug) { console.log(this.eventNamespace); }
+//			if (debug) { console.log(this.namespace); }
+//			if (debug) { console.log(this.widgetEventPrefix); }
+//			if (debug) { console.log(this.widgetFullName); }
+//			if (debug) { console.log(this.widgetName); }
             this.nameSpace = this.eventNamespace.replace(/[.]/g, '');
 			this.edited = false;
 			this.lastWorklogEdit = null;
@@ -194,6 +194,7 @@
             var templateHtml = '';
 			var log = this.log || this.options.template;
             var logObject = $.extend(true, {}, log);
+            if (debug) { console.log(logObject); }
             var options  = this.options;
             if (logObject) {
                 this.$element.css({
@@ -207,7 +208,10 @@
                     'css': {'margin-bottom': '10px'}
                 }).append($('<b>', {
                     'text':logObject.name + ' '
-                })).append($('<input>', {
+                })).append($('<div>', {
+                    'id':this.nameSpace + 'headerFormat',
+                    'css': {'float': 'right'}
+                }).append($('<input>', {
                     'id':this.nameSpace + 'boldCheck',
                     'checked':options.title.bold,
                     'type':'checkbox',
@@ -250,7 +254,7 @@
                         base._setTitleFormat.apply(base);
                         //that.options.title.underline = $(this).is(':checked');
                     }
-                })).buttonset()
+                })).buttonset())
                 ).append($('<div>', {
                     'id':this.nameSpace + 'body'
                 }));
@@ -332,9 +336,6 @@
 							document.execCommand('insertHTML', false, '<br><br>');
 							currentSelection = window.getSelection();
 							currentSelection.modify('move', 'backward', 'line');
-//							range = document.createRange();
-//							currentNode = currentSelection.getRangeAt(0).startContainer;
-//							var prevNode = currentNode.
 //							if (debug) console.log(currentSelection);
 //							if (debug) console.log(range);
 //							if (debug) console.log(currentNode);
@@ -361,18 +362,20 @@
                         break;
                     case 'section':
 						$(this).find('*:not(br)').contents().unwrap();
-                        var sectionText = $(this).html().replace(/(.*)<br>$/i, "$1").split("<br>");
+                        var sectionText = base._capitalizeFirst($(this).html().replace(/(.*)<br>$/i, "$1").split("<br>"));
                         if(base.log.firstLineTitle) {
                             base.log.sections[elemObj.index] = [base.log.sections[elemObj.index][0]].concat(sectionText);
                         } else {
                            base.log.sections[elemObj.index] =  sectionText;
                         }
+						base.refreshSectionBar(elemObj.index);
                         break;
                     case 'sig':
                         base.log.sig = this.innerText;
                         break;
                 }
                 base.showSuggest = true;
+				base._trigger( "change");
             }).hover(function(e) { 
                 if (e.type === "mouseenter") {
                     $(this).css('background-color', 'rgba( 255, 255, 255, 0.7)');
@@ -473,6 +476,17 @@
                 
             });
         },
+		_capitalizeFirst: function(text) {
+			if (Array.isArray(text)){
+				var base = this;
+				$.each(text, function (index, value) {
+					text[index] = base._capitalizeFirst(value);
+				});
+				return text;
+			} else {
+				return text.charAt(0).toUpperCase() + text.slice(1);
+			}
+		},
 		refresh: function () {
 			//this.$element.html("");
 			this.$element.text( "" );
@@ -509,17 +523,24 @@
             }
             if (value.length){
                 base.$worklogBody.append($('<div>', {
+                    'id':base.nameSpace + 'section' + index + 'bar',
+					'css':{'float': 'left', width:'13px'}
+                })).append($('<div>', {
                     'id':base.nameSpace + 'section' + index,
-                    'class':'editable autosuggest'
-                }).data({type: 'section', index: index, base: base}).html(value.join("<br>"))).append('<br>');
+                    'class':'editable autosuggest', 
+					'css':{'overflow': 'hidden'},
+					'data':{type: 'section', index: index, base: base},
+					'html':value.join('<br>') + '<br>'
+                })).append('<br>');
+				base.refreshSectionBar(index);
             }
         },
-        refreshSection: function (index) {
+        refreshSection: function (sectionNum) {
             if (debug) { console.log('Refreshing Section'); }
-            if (debug) { console.log(this.log.sections[index]); }
+            if (debug) { console.log(this.log.sections[sectionNum]); }
             var base = this;
             var logObj = $.extend(true, {}, this.log);
-            var section = logObj.sections[index];
+            var section = logObj.sections[sectionNum];
             var options = this.options;
             if (logObj.firstLineTitle){
                 switch(options.format) {
@@ -534,22 +555,48 @@
                         if (options.title.bold) {
                             titleString = '<b>' + titleString + '</b>';
                         }
-                        $('#' + base.nameSpace+ 'title' + index).html($('<font color="' + options.title.color + '">').html(titleString));
+                        $('#' + base.nameSpace+ 'title' + sectionNum).html($('<font color="' + options.title.color + '">').html(titleString));
                         break;
                     case "plain":
                         break;
                 }
             }
             if (section.length){
-                $('#' + base.nameSpace + 'section' + index).html(section.join("<br>"));
+                $('#' + base.nameSpace + 'section' + sectionNum).html(section.join("<br>") + '<br>');
+				base.refreshSectionBar(sectionNum);
             }
         },
+		refreshSectionBar: function (sectionNum) {
+			var base = this;
+            var logObj = $.extend(true, {}, this.log);
+			var section = logObj.sections[sectionNum];
+			$('#' + this.nameSpace + 'section' + sectionNum + 'bar').html("");
+			var sectionLength = section.length;
+			if (logObj.firstLineTitle){
+				sectionLength--;
+			}
+			for (var i = 0; i < sectionLength; i++) {
+				console.log(parseInt($('#' + this.nameSpace + 'section' + sectionNum).css('height'), 10)/sectionLength);
+				$('#' + this.nameSpace + 'section' + sectionNum + 'bar').append($('<span>', {
+					'class':'ui-icon ui-icon-close deleteLine',
+					'css':{'cursor': 'pointer', 'width': '13px', 'height': parseInt($('#' + this.nameSpace + 'section' + sectionNum).css('height'), 10)/sectionLength},
+					'data':{section: sectionNum, line: i}
+				}));
+			}
+			$('#' + this.nameSpace + 'section' + sectionNum + 'bar')
+				.css('height', $('#' + this.nameSpace + 'section' + sectionNum).css('height'));
+			$('.deleteLine').off('click').on('click', function () {
+				var objData = $(this).data();
+				console.log(objData);
+				base.removeLine(objData.section, objData.line);
+			});
+		},
         findLineInSection: function (search, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Finding Line In Section'); }
 			if (search === '') {
 				search = '^$';
 			}
-			var re = new RegExp(search);
+			var re = new RegExp(search, 'i');
             var section = this.log.sections[sectionNum];
             startIndex = startIndex != null ? startIndex : 0;
             endIndex = endIndex != null ? endIndex : section.length;
@@ -596,6 +643,7 @@
 		},
 		addLine: function (value, sectionNum, lineNum) {
             if (debug) { console.log('Adding Line'); }
+			value = this._capitalizeFirst(value);
 			sectionNum = sectionNum != null ? sectionNum : this.log.sections.length -1;
             var section = this.log.sections[sectionNum];
 			//lineNum = lineNum != null ? lineNum : section.length;
@@ -615,11 +663,14 @@
 			}
 			this.log.sections[sectionNum] = section;
             this.refreshSection(sectionNum);
+			this._trigger( "change");
 		},
         setLine: function (lineNum, value, sectionNum) {
             if (debug) { console.log('Setting Line'); }
+			value = this._capitalizeFirst(value);
             this.log.sections[sectionNum][lineNum] = value;
             this.refreshSection(sectionNum);
+			this._trigger( "change");
         },
         setCurrentLine: function (value, section) {
             if (debug) { console.log('Setting Current Line'); }
@@ -634,7 +685,7 @@
 			var lineNum = this.findLine(findVal, sectionNum, startIndex, endIndex);
             if (debug) { console.log(lineNum); }
 			if (lineNum !== false) {
-                var re = new RegExp(findVal);
+                var re = new RegExp(findVal, 'i');
                 if (debug) { console.log(this.log.sections[lineNum.section][lineNum.line]); }
                 var oldVal = this.log.sections[lineNum.section][lineNum.line];
                 var newVal = oldVal.replace(re, replaceVal);
@@ -647,7 +698,7 @@
 		replaceLine: function (findVal, replaceVal, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Replacing Line'); }
 			//findVal = findVal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-			//var re = new RegExp(findVal);
+			//var re = new RegExp(findVal, 'i');
 			var lineNum = this.findLine(findVal, sectionNum, startIndex, endIndex);
 			if (lineNum !== false) {
 				this.setLine(lineNum.line, replaceVal, lineNum.section);
@@ -655,6 +706,23 @@
 			} else {
 				return false;
 			}
+		},
+		removeLine: function (sectionNum, index) {
+			if (debug) { console.log('Removing Line'); }
+			if (debug) { console.log(sectionNum); }
+			if (debug) { console.log(index); }
+			var section = this.log.sections[sectionNum];
+			var sectionLength = section.length;
+			if (this.log.firstLineTitle){
+				index++;
+				sectionLength--;
+			}
+			if (sectionLength > 1) {
+				this.log.sections[sectionNum].splice(index, 1);
+			} else {
+				this.log.sections[sectionNum][index] = "";
+			}
+			this.refreshSection(sectionNum);
 		},
 		toArray: function (sectionNum) {
             if (debug) { console.log('toArray'); }
@@ -719,6 +787,9 @@
 		value: function (sectionNum) {
             if (debug) { console.log('value'); }
 			return this.toArray(sectionNum).join('\n');
+		},
+		logObj: function () {
+			return this.log;
 		}
 	});
 })( jQuery, window, document );
