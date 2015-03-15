@@ -179,7 +179,7 @@
                 if (position !== this.currentLine || this.showSuggest) {
 //                    if (debug) console.log(lineHeight);
 //                    if (debug) console.log(position);
-//                    if (debug) console.log(tArray[position]);
+//                    if (debug) console.log(tArray[position]); 
                     autocompletePos = parseInt($(elem).css("padding-top"), 10) + ((position + 1) *  lineHeight);
                     $(elem).autocomplete( "option", "position", { my : "right top", at: "right top+" + autocompletePos, collision: "none" } ).autocomplete("search", tArray[position]);
                     this.currentLine = position;
@@ -202,12 +202,14 @@
                     height: options.height,
                     background: options.background,
                     padding: '2px',
+					'border-radius': '5px',
                     resize: 'none'
                 }).append($('<div>', {
                     'id':this.nameSpace + 'header',
-                    'css': {'margin-bottom': '10px'}
+                    'css': {'margin-bottom': '5px', 'height': '18px', 'background': "rgba(0,0,0,0.15)", 'vertical-align': 'bottom', 'border-radius': '4px', 'position': 'relative'}
                 }).append($('<b>', {
-                    'text':logObject.name + ' '
+                    'text':logObject.name + ' Work Log ',
+					'css':{'padding': '3px', 'position': 'absolute', 'bottom': '0', 'left': '0'}
                 })).append($('<div>', {
                     'id':this.nameSpace + 'headerFormat',
                     'css': {'float': 'right'}
@@ -352,7 +354,17 @@
                     }
 					return false;
                 }
-            }).on( 'input', function() {
+            }).on('paste', function(e){
+				if (debug) { console.log(e.originalEvent.clipboardData.getData("text/plain")); }
+				var origE = e.originalEvent;
+				if (origE && origE.clipboardData && origE.clipboardData.getData) {
+					var pasteData = origE.clipboardData.getData("text/plain");
+					e.preventDefault();
+					var text = pasteData.replace(/\r?\n|\r/g, '<br>');
+					if (debug) { console.log(text); }
+					document.execCommand("insertHTML", false, text);
+				}
+			}).on( 'input', function() {
                 //if (debug) { console.log(this.innerText); }
                 //if (debug) { console.log($(this).data()); }
                 var elemObj = $(this).data();
@@ -361,7 +373,7 @@
                         base.log.sections[elemObj.index][0] = this.innerText;
                         break;
                     case 'section':
-						$(this).find('*:not(br)').contents().unwrap();
+						//$(this).find('*:not(br)').contents().unwrap();
                         var sectionText = base._capitalizeFirst($(this).html().replace(/(.*)<br>$/i, "$1").split("<br>"));
                         if(base.log.firstLineTitle) {
                             base.log.sections[elemObj.index] = [base.log.sections[elemObj.index][0]].concat(sectionText);
@@ -567,6 +579,7 @@
             }
         },
 		refreshSectionBar: function (sectionNum) {
+            if (debug) { console.log('Refreshing Section Bar'); }
 			var base = this;
             var logObj = $.extend(true, {}, this.log);
 			var section = logObj.sections[sectionNum];
@@ -682,14 +695,25 @@
         },
 		replace: function (findVal, replaceVal, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Replacing'); }
+            if (debug) { console.log(replaceVal); }
 			var lineNum = this.findLine(findVal, sectionNum, startIndex, endIndex);
+			var newVal;
+			var base = this;
             if (debug) { console.log(lineNum); }
 			if (lineNum !== false) {
                 var re = new RegExp(findVal, 'i');
                 if (debug) { console.log(this.log.sections[lineNum.section][lineNum.line]); }
                 var oldVal = this.log.sections[lineNum.section][lineNum.line];
-                var newVal = oldVal.replace(re, replaceVal);
-				this.setLine(lineNum.line, newVal, lineNum.section);
+				if (Array.isArray(replaceVal)) {
+					newVal = oldVal.replace(re, replaceVal.shift());
+					this.setLine(lineNum.line, newVal, lineNum.section);
+					$.each(replaceVal, function (index, value){
+						base.addLine(value, lineNum.section);
+					});
+				} else {
+					newVal = oldVal.replace(re, replaceVal);
+					this.setLine(lineNum.line, newVal, lineNum.section);
+				}
 				return lineNum;
 			} else {
 				return false;
