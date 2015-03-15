@@ -1,10 +1,9 @@
 # jquery.worklog
-Text Area + Auto Suggest
+contentEditable Divs + Auto Suggest
 
 # Dependencies
-jQuery
-jQuery UI
-jquery.autogrow-textarea
+- jQuery
+- jQuery UI
 
 #License
 This is free and unencumbered software released into the public domain.
