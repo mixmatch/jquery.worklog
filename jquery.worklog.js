@@ -8,7 +8,7 @@
 /*global jQuery, $*/
 
  ; (function ($, window, document, undefined) {
-    var debug = true;
+    var debug = false;
     $.widget( "mixmatch.worklog" , {
         //Options to be used as defaults
         options: {
@@ -201,12 +201,20 @@
                     width: options.width,
                     height: options.height,
                     background: options.background,
+					'box-sizing': 'border-box',
                     padding: '2px',
 					'border-radius': '5px',
                     resize: 'none'
                 }).append($('<div>', {
                     'id':this.nameSpace + 'header',
-                    'css': {'margin-bottom': '5px', 'height': '18px', 'background': "rgba(0,0,0,0.15)", 'vertical-align': 'bottom', 'border-radius': '4px', 'position': 'relative'}
+                    'css': {
+						'margin-bottom': '5px',
+						'height': '18px',
+						'background': "rgba(0,0,0,0.15)",
+						'vertical-align': 'bottom',
+						'border-radius': '4px',
+						'position': 'relative'
+					}
                 }).append($('<b>', {
                     'text':logObject.name + ' Work Log ',
 					'css':{'padding': '3px', 'position': 'absolute', 'bottom': '0', 'left': '0'}
@@ -345,10 +353,10 @@
 							document.execCommand('insertHTML', false, '<br><br>');
 						}
 //						if (base.currentLine === base.log.sections[$(this).data('index')].length - 2) {
-//							console.log('<br><br>');
+//							if (debug) console.log('<br><br>');
 //                        	document.execCommand('insertHTML', false, '<br><br>');
 //						} else {
-//							console.log('<br>');
+//							if (debug) console.log('<br>');
 //                        	document.execCommand('insertHTML', false, '<br>');
 //						}
                     }
@@ -589,7 +597,7 @@
 				sectionLength--;
 			}
 			for (var i = 0; i < sectionLength; i++) {
-				console.log(parseInt($('#' + this.nameSpace + 'section' + sectionNum).css('height'), 10)/sectionLength);
+				if (debug) console.log(parseInt($('#' + this.nameSpace + 'section' + sectionNum).css('height'), 10)/sectionLength);
 				$('#' + this.nameSpace + 'section' + sectionNum + 'bar').append($('<span>', {
 					'class':'ui-icon ui-icon-close deleteLine',
 					'css':{'cursor': 'pointer', 'width': '13px', 'height': parseInt($('#' + this.nameSpace + 'section' + sectionNum).css('height'), 10)/sectionLength},
@@ -600,7 +608,7 @@
 				.css('height', $('#' + this.nameSpace + 'section' + sectionNum).css('height'));
 			$('.deleteLine').off('click').on('click', function () {
 				var objData = $(this).data();
-				console.log(objData);
+				if (debug) console.log(objData);
 				base.removeLine(objData.section, objData.line);
 			});
 		},
