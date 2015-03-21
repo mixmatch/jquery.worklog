@@ -1,6 +1,6 @@
 var suggestLength = 16;
 $(document).ready(function () {
-    //$('#worklog').worklog();  
+    //$('#worklog').worklog();
     $('#worklog').worklog({
         // These are the defaults.
         width: "100%",
@@ -16,7 +16,7 @@ $(document).ready(function () {
         template: {
             name: "Default",
             firstLineTitle: true,
-            sections: [ 
+            sections: [
                 ['Section 1 Header', 'Section 1 line 1', 'Section 1 line 2', ''],
                 ['Section 2 Header', 'Section 2 line 1', 'Section 2 line 2']
             ],
@@ -32,5 +32,7 @@ $(document).ready(function () {
         suggestLength: suggestLength
     }).bind( "worklogchange", function() {
         console.log( "Changed" );
+    }).bind( "worklogedit", function() {
+        console.log( "Edited" );
     });
 });
