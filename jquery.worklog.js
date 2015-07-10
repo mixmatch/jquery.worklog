@@ -27,7 +27,8 @@
             template: false,
             autoSuggest: false,
             autoFocus: false,
-            suggestLength: 24
+            suggestLength: 24,
+            editable: true
         },
         _create: function() {
 //            if (debug) { console.log("_create"); }
@@ -278,7 +279,7 @@
                 if (logObject.sig !=  null){
                     base.$worklogBody.append($('<div>', {
                         'id':base.nameSpace + 'sig',
-                        'class':'editable'
+                        'class':base.options.editable ? 'editable' : null
                     }).data({type: 'sig', base: base}).html('<b>' + logObject.sig + '</b>'));
                 }
             }
@@ -541,7 +542,7 @@
                         }
                         base.$worklogBody.append($('<div>', {
                             'id':base.nameSpace+ 'title' + index,
-                            'class':'editable'
+                            'class':base.options.editable ? 'editable' : null
                         }).append($('<font color="' + options.title.color + '">').html(titleString)
                         ).data({type: 'title', index: index, base: base}));
                         break;
@@ -555,12 +556,15 @@
                     'css':{'float': 'left', width:'13px'}
                 })).append($('<div>', {
                     'id':base.nameSpace + 'section' + index,
-                    'class':'editable autosuggest',
+                    'class':base.options.editable ? 'editable autosuggest' : null,
                     'css':{'overflow': 'hidden'},
                     'data':{type: 'section', index: index, base: base},
                     'html':value.join('<br>') + '<br>'
                 })).append('<br>');
                 base.refreshSectionBar(index);
+            }
+            if (!base.options.editable){
+              $('#' + base.nameSpace + 'section' + index + 'bar').hide();
             }
         },
         refreshSection: function (sectionNum) {

@@ -1,6 +1,30 @@
 # jquery.worklog
 contentEditable Divs + Auto Suggest
 
+#Options
+Defaults:
+```json
+options: {
+    // These are the defaults.
+    width: "650px",
+    height: "200px",
+    background: "#FFF",
+    format: "plain",
+    title: {
+        color: "#000",
+        bold: true,
+        underline: true,
+        italics: false
+    },
+    fixMinHeight: false,
+    template: false,
+    autoSuggest: false,
+    autoFocus: false,
+    suggestLength: 24,
+    editable: true
+}
+```
+
 # Dependencies
 - jQuery
 - jQuery UI

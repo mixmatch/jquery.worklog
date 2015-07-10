@@ -29,7 +29,8 @@ $(document).ready(function () {
             {"line":"Section 1 line 2 dragon ","count":1,"lastUsed":0}
         ],
         autoFocus: false,
-        suggestLength: suggestLength
+        suggestLength: suggestLength,
+        editable: true
     }).bind( "worklogchange", function() {
         console.log( "Changed" );
     }).bind( "worklogedit", function() {
