@@ -1,11 +1,11 @@
 # jquery.worklog
 contentEditable Divs + Auto Suggest
+Generates a work log element using conentEditable div elements, with autosuggest and automatic growth based on contact. Supports HTML and plain text formatting of headers.
 
 #Options
 Defaults:
-```json
+```javascript
 options: {
-    // These are the defaults.
     width: "650px",
     height: "200px",
     background: "#FFF",
