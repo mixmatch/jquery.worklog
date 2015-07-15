@@ -9,7 +9,7 @@
 
  ; (function ($, window, document, undefined) {
     var debug = false;
-    $.widget( "mixmatch.worklog" , {
+    $.widget("mixmatch.worklog", {
         //Options to be used as defaults
         options: {
             // These are the defaults.
@@ -37,7 +37,7 @@
 //            if (debug) { console.log(this.widgetEventPrefix); }
 //            if (debug) { console.log(this.widgetFullName); }
 //            if (debug) { console.log(this.widgetName); }
-            this.nameSpace = this.eventNamespace.replace(/[.]/g, '');
+            this.nameSpace = this.eventNamespace.replace(/[.]/g, "");
             this.edited = false;
             this.lastWorklogEdit = null;
             this.inactiveInterval = [];
@@ -53,68 +53,35 @@
             this.element.addClass(this.widgetName);
             this._setAutoSuggestLines();
             this._createTextArea();
-            //this.refresh();
         },
-        _setOption: function (key, value) {
-            this._super( key, value );
+        _setOption: function(key, value) {
+            this._super(key, value);
         },
-        _setOptions: function (options) {
-            this._super( options );
+        _setOptions: function(options) {
+            this._super(options);
             this.refresh();
-//            var base = this;
-//            $.each(options, function (index, value) {
-//                switch (index) {
-//                    case "autoFocus":
-//                        break;
-//                    case "autoSuggest":
-//                        break;
-//                    case "background":
-//                        break;
-//                    case "disabled":
-//                        break;
-//                    case "fixMinHeight":
-//                        break;
-//                    case "format":
-//                        break;
-//                    case "height":
-//                        break;
-//                    case "height":
-//                        break;
-//                    case "background":
-//                        break;
-//                    case "height":
-//                        break;
-//                    case "wdth":
-//                        break;
-//                }
-//                if (debug) { console.log(index); }
-//                if (debug) { console.log(value); }
-//            });
-            //this.refresh();
         },
-        _blur: function () {
+        _blur: function() {
             this.$worklog.blur();
         },
-        _constrain: function( value ) {
-
+        _constrain: function(value) {
+            
         },
-        _destroy: function () {
-            this.element
-                .removeClass(this.nameSpace)
-                .text( "" );
+        _destroy: function() {
+            this.element.removeClass(this.nameSpace).text("");
+            $(this.$worklogBody).off();
         },
-        _setAutoSuggestLines: function () {
+        _setAutoSuggestLines: function() {
             if (debug) { console.log("setAutoSuggestLines"); }
-            //this.autoSuggestLines = new Array();
             if (this.options.autoSuggest) {
                 var base = this;
-                $.each(this.options.autoSuggest, function (index, value){
+                $.each(this.options.autoSuggest, function(index, value) {
                     //if (debug) console.log(that);
                     base.autoSuggestLines.push(value.line);
                 });
             }
         },
-        _prevEditable: function (elem) {
+        _prevEditable: function(elem) {
 //            if (debug) console.log(elem);
             var prevElem = $(elem).prev('.editable');
             if (prevElem.length){
@@ -127,7 +94,7 @@
                 return false;
             }
         },
-        _nextEditable: function (elem) {
+        _nextEditable: function(elem) {
 //            if (debug) console.log(elem);
             var nextElem = $(elem).next('.editable');
             if (nextElem.length){
@@ -140,7 +107,7 @@
                 return false;
             }
         },
-        _getCaretOffsetHTML: function (element) {
+        _getCaretOffsetHTML: function(element) {
             var caretOffset = 0;
             var doc = element.ownerDocument || element.document;
             var win = doc.defaultView || doc.parentWindow;
@@ -157,7 +124,7 @@
                     caretOffset = selHTML.length;
                     //if (debug) console.log(selHTML);
                 }
-            } else if ( (sel = doc.selection) && sel.type != "Control") {
+            } else if (sel = doc.selection && sel.type != "Control") {
                 var textRange = sel.createRange();
                 var preCaretTextRange = doc.body.createTextRange();
                 preCaretTextRange.moveToElementText(element);
@@ -168,7 +135,7 @@
             //if (debug) console.log(caretOffset);
             return caretOffset;
         },
-        _checkCursorPosition: function () {
+        _checkCursorPosition: function() {
             var elem = this.focusedElem;
             var $elem = $(elem);
             if (this.options.autoSuggest && elem != null) {
@@ -188,7 +155,73 @@
                 }
             }
         },
-        _createTextArea: function () {
+        _upKey: function(event, base) {
+            event.stopImmediatePropagation();
+            var c, e, f;
+            if (0 === base.currentLine || null == base.currentLine)
+                if (c = window.getSelection(), e = document.createRange(), c.getRangeAt(0), c = c.getRangeAt(0).startOffset, f = base._prevEditable.apply(base, [base.focusedElem])) f.focus().css("background-color", "rgba( 255, 255, 255, 0.7)"), f = f.hasClass("section") ? f.contents().last()[0] : window.getSelection().getRangeAt(0).startContainer, e.setStart(f, Math.min(c, f.length)), e.collapse(true), setTimeout(function() {
+                    var selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(e);
+                }, 1)
+        },
+        _downKey: function(event, base) {
+            event.stopImmediatePropagation();
+            var d, e, f;
+            d = $(base.focusedElem).html().replace(/(.*)<br>$/i, "$1").split("<br>").length - 1;
+            if (base.currentLine === d || null == base.currentLine)
+                if (d = window.getSelection(), e = document.createRange(), d.getRangeAt(0), d = d.getRangeAt(0).startOffset, f = base._nextEditable.apply(base, [base.focusedElem])) f.focus().css("background-color", "rgba( 255, 255, 255, 0.7)"), f = window.getSelection().getRangeAt(0).startContainer, e.setStart(f, Math.min(d, f.length)), e.collapse(true), setTimeout(function() {
+                    var selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(e);
+                }, 1)
+        },
+        _addAutoSuggest: function(a) {
+            var base = this,
+                d = this.options;
+            $(a).keydown(function(a) {
+                var d = $.ui.keyCode;
+                a.keyCode == d.UP ? base._upKey(a, base) : a.keyCode == d.DOWN && base._downKey(a, base)
+            }).autocomplete({
+                source: function(a, f) {
+                    var g = a.term.trim(),
+                        m = [],
+                        h = [],
+                        k = [];
+                    $.each(base.autoSuggestLines, function(a, b) {
+                        if (h.length >= d.suggestLength) return false;
+                        var c = b.toLowerCase().indexOf(g.toLowerCase());
+                        0 === c ? b.trim() !== g && h.push(b) : 0 < c && k.push(b)
+                    });
+                    h = h.slice(0, d.suggestLength);
+                    k = k.slice(0, d.suggestLength -
+                        h.length);
+                    m = m.concat(h).concat(k);
+                    f(m)
+                },
+                focus: function(a, base) {
+                    return false
+                },
+                select: function(a, d) {
+                    base.setCurrentLine(d.item.value, $(".section").index($(this)));
+                    base._trigger("edit");
+                    return false
+                },
+                position: {
+                    my: "right top",
+                    at: "right bottom"
+                },
+                delay: 0,
+                autoFocus: this.options.autoFocus
+            }).focus(function() {
+                base.checkInterval = setInterval(function() {
+                    base._checkCursorPosition()
+                }, 100)
+            }).blur(function() {
+                clearInterval(base.checkInterval)
+            })
+        },
+        _createTextArea: function() {
             if (debug) { console.log("createTextArea"); }
             //for callbacks that need this scope
             var base = this;
@@ -202,23 +235,39 @@
                     width: options.width,
                     height: options.height,
                     background: options.background,
-                    'box-sizing': 'border-box',
-                    padding: '2px',
-                    'border-radius': '5px',
-                    resize: 'none'
-                }).append($('<div>', {
-                    'id':this.nameSpace + 'header',
-                    'css': {
-                        'margin-bottom': '5px',
-                        'height': '18px',
-                        'background': "rgba(0,0,0,0.15)",
-                        'vertical-align': 'bottom',
-                        'border-radius': '4px',
-                        'position': 'relative'
+                    "box-sizing": "border-box",
+                    padding: "2px",
+                    "border-radius": "5px",
+                    resize: "none"
+                }).append($("<div>", {
+                    id: this.nameSpace + "header",
+                    css: {
+                        "margin-bottom": "5px",
+                        height: "18px",
+                        background: "rgba(0,0,0,0.15)",
+                        "vertical-align": "bottom",
+                        "border-radius": "4px",
+                        position: "relative"
                     }
-                }).append($('<b>', {
-                    'text':logObject.name + ' Work Log ',
-                    'css':{'padding': '3px', 'position': 'absolute', 'bottom': '0', 'left': '0'}
+                }).append($("<b>", {
+                    text: logObject.name + " Work Log ",
+                    css: {
+                        padding: "3px",
+                        position: "absolute",
+                        bottom: "0",
+                        left: "0"
+                    }
+                })).append($("<button>", {
+                    id: this.nameSpace + "addSectionBtn",
+                    text: "Add Section",
+                    css: {
+                        "float": "right"
+                    },
+                    type: "button",
+                    click: function() {
+                        base.addSection(["Section Header", "Section Lines"]);
+                        base._trigger("edit")
+                    }
                 })).append($('<div>', {
                     'id':this.nameSpace + 'headerFormat',
                     'css': {'float': 'right'}
@@ -226,7 +275,7 @@
                     'id':this.nameSpace + 'boldCheck',
                     'checked':options.title.bold,
                     'type':'checkbox',
-                    'change': function () {
+                    'change': function() {
                         base.options.title.bold = $(this).is(':checked');
                         base._setTitleFormat.apply(base);
                     }
@@ -237,7 +286,7 @@
                     'id':this.nameSpace + 'italicsCheck',
                     'checked':options.title.italics,
                     'type':'checkbox',
-                    'change': function () {
+                    'change': function() {
                         options.title.italics = $(this).is(':checked');
                         base._setTitleFormat.apply(base);
                     }
@@ -248,7 +297,7 @@
                     'id':this.nameSpace + 'underlineCheck',
                     'checked':options.title.underline,
                     'type':'checkbox',
-                    'change': function () {
+                    'change': function() {
                         options.title.underline = $(this).is(':checked');
                         base._setTitleFormat.apply(base);
                     }
@@ -260,7 +309,7 @@
                     'type':'color',
                     'val': options.title.color,
                     'css':{'width':'16px', 'height':'16px', 'margin-left':'10px', 'padding': '0px 1px'},
-                    'change': function () {
+                    'change': function() {
                         options.title.color = $(this).val();
                         base._setTitleFormat.apply(base);
                         //that.options.title.underline = $(this).is(':checked');
@@ -273,10 +322,10 @@
                 $('.ui-button-text', '#' + this.nameSpace + 'header').css({"padding": "0px 2px", "margin": "0px auto", 'font-size': '0.9em'});
 
                 this.$worklogBody = $('#' + this.nameSpace + 'body');
-                $.each(logObject.sections, function (index, value){
+                $.each(logObject.sections, function(index, value) {
                     base.addSection.apply(base, [index, value]);
                 });
-                if (logObject.sig !=  null){
+                if (logObject.sig !=  null) {
                     base.$worklogBody.append($('<div>', {
                         'id':base.nameSpace + 'sig',
                         'class':base.options.editable ? 'editable' : null
@@ -298,7 +347,7 @@
                         var $prevElem = base._prevEditable.apply(base, [base.focusedElem]);
                         if ($prevElem) {
                             $prevElem.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
-                            if ($prevElem.data('type') === 'section'){
+                            if ($prevElem.data('type') === 'section') {
                                 currentNode = $prevElem.contents().last()[0];
                             } else {
                                 currentNode = window.getSelection().getRangeAt(0).startContainer;
@@ -306,7 +355,7 @@
                             if (debug) { console.log(currentNode); }
                             range.setStart(currentNode, Math.min(caretStart, currentNode.length));
                             range.collapse(true);
-                            setTimeout ( function () {
+                            setTimeout(function() {
                                 var sel = window.getSelection();
                                 sel.removeAllRanges();
                                 sel.addRange(range);
@@ -329,7 +378,7 @@
                             currentNode = window.getSelection().getRangeAt(0).startContainer
                             range.setStart(currentNode, Math.min(caretStart, currentNode.length));
                             range.collapse(true);
-                            setTimeout ( function () {
+                            setTimeout(function () {
                                 var sel = window.getSelection();
                                 sel.removeAllRanges();
                                 sel.addRange(range);
@@ -338,7 +387,7 @@
                     }
                 } else if (event.keyCode == keyCode.ENTER) {
                     event.stopImmediatePropagation();
-                    if ($(this).data('type') === 'section'){
+                    if ($(this).data('type') === 'section') {
                         if (debug) console.log($(this).data('index'));
                         if (debug) console.log(base.log.sections[$(this).data('index')]);
                         if (debug) console.log(base.log.sections[$(this).data('index')].length - 2);
@@ -369,7 +418,7 @@
                     }
                     return false;
                 }
-            }).on('paste', function(e){
+            }).on('paste', function(e) {
                 if (debug) { console.log(e.originalEvent.clipboardData.getData("text/plain")); }
                 var origE = e.originalEvent;
                 if (origE && origE.clipboardData && origE.clipboardData.getData) {
@@ -379,7 +428,7 @@
                     if (debug) { console.log(text); }
                     document.execCommand("insertHTML", false, text);
                 }
-            }).on( 'input', function() {
+            }).on('input', function() {
                 //if (debug) { console.log(this.innerText); }
                 //if (debug) { console.log($(this).data()); }
                 var elemObj = $(this).data();
@@ -402,32 +451,32 @@
                         break;
                 }
                 base.showSuggest = true;
-                base._trigger( "change");
-                base._trigger( "edit");
+                base._trigger("change");
+                base._trigger("edit");
             }).hover(function(e) {
                 if (e.type === "mouseenter") {
                     $(this).css('background-color', 'rgba( 255, 255, 255, 0.7)');
                 } else if ($(base.focusedElem).attr('id') != $(this).attr('id')){
                     $(this).css('background-color', 'transparent');
                 }
-            }).focus(function () {
+            }).focus(function() {
                 base.showSuggest = false;
                 $(this).css('background-color', 'rgba( 255, 255, 255, 0.7)');
                 base.focusedElem = this;
-            }).blur(function () {
+            }).blur(function() {
                 $(this).css('background-color', 'transparent');
                 base.currentLine = null;
                 base.focusedElem = null;
             });
             if (options.autoSuggest) {
                 $('.autosuggest').autocomplete({
-                    source: function (request, response) {
+                    source: function(request, response) {
                         var term = request.term.trim();
                         if (debug) { console.log(term); }
                         var result = [];
                         var firstWord = [];
                         var inLine = [];
-                        $.each(base.autoSuggestLines, function (index, value) {
+                        $.each(base.autoSuggestLines, function(index, value) {
                             if (firstWord.length >= options.suggestLength) {
                                 if (debug) { console.log("Max suggestions reached"); }
                                 //break out of $.each
@@ -454,10 +503,10 @@
                         response(result);//this will show in the selection box.
                         //response(term);
                     },
-                    focus: function( event, ui ) {
+                    focus: function(event, ui) {
                         return false;
                     },
-                    select: function( event, ui ) {
+                    select: function(event, ui) {
                         if (debug) { console.log("Select"); }
                         //if (debug) { console.log(event); }
                         if (debug) { console.log(ui.item.value); }
@@ -468,21 +517,21 @@
                     position: { my : "right top", at: "right bottom" },
                     delay: 0,
                     autoFocus: this.options.autoFocus
-                }).focus(function () {
-                    base.checkInterval = setInterval(function () { base._checkCursorPosition(); }, 100);
-                }).blur(function () {
+                }).focus(function() {
+                    base.checkInterval = setInterval(function() { base._checkCursorPosition(); }, 100);
+                }).blur(function() {
                     clearInterval(base.checkInterval);
                 });
             }
             //$(':focus').css('background-color', 'rgba( 255, 255, 255, 0.7)');
         },
-        _setTitleFormat: function () {
+        _setTitleFormat: function() {
             if (debug) { console.log('Setting Title Format'); }
             if (debug) { console.log(this.log); }
             var logObject = this.log;
             var options = this.options;
             var nameSpace = this.nameSpace;
-            $.each(logObject.sections, function (index, value) {
+            $.each(logObject.sections, function(index, value) {
                 if (logObject.firstLineTitle){
                     switch(options.format) {
                         case "html":
@@ -508,7 +557,7 @@
         _capitalizeFirst: function(text) {
             if (Array.isArray(text)){
                 var base = this;
-                $.each(text, function (index, value) {
+                $.each(text, function(index, value) {
                     text[index] = base._capitalizeFirst(value);
                 });
                 return text;
@@ -516,12 +565,12 @@
                 return text.charAt(0).toUpperCase() + text.slice(1);
             }
         },
-        refresh: function () {
+        refresh: function() {
             //this.$element.html("");
             this.$element.text( "" );
             this._createTextArea();
         },
-        addSection: function (index, value) {
+        addSection: function(index, value) {
             if (debug) { console.log('Adding Section'); }
             //if (debug) { console.log(value); }
             var base = this;
@@ -567,7 +616,7 @@
               $('#' + base.nameSpace + 'section' + index + 'bar').hide();
             }
         },
-        refreshSection: function (sectionNum) {
+        refreshSection: function(sectionNum) {
             if (debug) { console.log('Refreshing Section'); }
             if (debug) { console.log(this.log.sections[sectionNum]); }
             var base = this;
@@ -598,7 +647,7 @@
                 base.refreshSectionBar(sectionNum);
             }
         },
-        refreshSectionBar: function (sectionNum) {
+        refreshSectionBar: function(sectionNum) {
             if (debug) { console.log('Refreshing Section Bar'); }
             var base = this;
             var logObj = $.extend(true, {}, this.log);
@@ -618,14 +667,14 @@
             }
             $('#' + this.nameSpace + 'section' + sectionNum + 'bar')
                 .css('height', $('#' + this.nameSpace + 'section' + sectionNum).css('height'));
-            $('.deleteLine').off('click').on('click', function () {
+            $('.deleteLine').off('click').on('click', function() {
                 var objData = $(this).data();
                 if (debug) console.log(objData);
                 base.removeLine(objData.section, objData.line);
                 base._trigger( "edit");
             });
         },
-        findLineInSection: function (search, sectionNum, startIndex, endIndex) {
+        findLineInSection: function(search, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Finding Line In Section'); }
             if (search === '') {
                 search = '^$';
@@ -648,7 +697,7 @@
                     return false;
                 }
             }
-            $.each(section, function (index, value){
+            $.each(section, function(index, value){
                 if ((re.test(value)) && (index >= startIndex) && (index < endIndex)) {
                 //if ((value === search || value.indexOf(search) !== -1) && (index >= startIndex) && (index < endIndex)) {
                     lineNum = index;
@@ -657,7 +706,7 @@
             });
             return lineNum;
         },
-        findLine: function (search, sectionNum, startIndex, endIndex) {
+        findLine: function(search, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Finding Line'); }
             var base = this;
             var logObj = this.log;
@@ -665,7 +714,7 @@
             if (sectionNum != null) {
                 lineNum = this.findLineInSection(search, sectionNum, startIndex, endIndex);
             } else {
-                $.each(this.log.sections, function (index, value){
+                $.each(this.log.sections, function(index, value){
                     lineNum = base.findLineInSection.apply(base, [search, index, startIndex, endIndex]);
                     if (lineNum !== false) {
                         sectionNum = index;
@@ -675,7 +724,7 @@
             }
             return lineNum !== false ? {section: sectionNum, line: lineNum} : false;
         },
-        addLine: function (value, sectionNum, lineNum) {
+        addLine: function(value, sectionNum, lineNum) {
             if (debug) { console.log('Adding Line'); }
             value = this._capitalizeFirst(value);
             sectionNum = sectionNum != null ? sectionNum : this.log.sections.length -1;
@@ -697,16 +746,16 @@
             }
             this.log.sections[sectionNum] = section;
             this.refreshSection(sectionNum);
-            this._trigger( "change");
+            this._trigger("change");
         },
-        setLine: function (lineNum, value, sectionNum) {
+        setLine: function(lineNum, value, sectionNum) {
             if (debug) { console.log('Setting Line'); }
             value = this._capitalizeFirst(value);
             this.log.sections[sectionNum][lineNum] = value;
             this.refreshSection(sectionNum);
-            this._trigger( "change");
+            this._trigger("change");
         },
-        setCurrentLine: function (value, section) {
+        setCurrentLine: function(value, section) {
             if (debug) { console.log('Setting Current Line'); }
             var lineNum = this.currentLine;
             if (this.log.firstLineTitle) {
@@ -714,7 +763,7 @@
             }
             this.setLine.apply(this, [lineNum, value, section]);
         },
-        replace: function (findVal, replaceVal, sectionNum, startIndex, endIndex) {
+        replace: function(findVal, replaceVal, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Replacing'); }
             if (debug) { console.log(replaceVal); }
             var lineNum = this.findLine(findVal, sectionNum, startIndex, endIndex);
@@ -728,7 +777,7 @@
                 if (Array.isArray(replaceVal)) {
                     newVal = oldVal.replace(re, replaceVal.shift());
                     this.setLine(lineNum.line, newVal, lineNum.section);
-                    $.each(replaceVal, function (index, value){
+                    $.each(replaceVal, function(index, value){
                         base.addLine(value, lineNum.section);
                     });
                 } else {
@@ -740,7 +789,7 @@
                 return false;
             }
         },
-        replaceLine: function (findVal, replaceVal, sectionNum, startIndex, endIndex) {
+        replaceLine: function(findVal, replaceVal, sectionNum, startIndex, endIndex) {
             if (debug) { console.log('Replacing Line'); }
             //findVal = findVal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             //var re = new RegExp(findVal, 'i');
@@ -752,7 +801,7 @@
                 return false;
             }
         },
-        removeLine: function (sectionNum, index) {
+        removeLine: function(sectionNum, index) {
             if (debug) { console.log('Removing Line'); }
             if (debug) { console.log(sectionNum); }
             if (debug) { console.log(index); }
@@ -769,13 +818,13 @@
             }
             this.refreshSection(sectionNum);
         },
-        toArray: function (sectionNum) {
+        toArray: function(sectionNum) {
             if (debug) { console.log('toArray'); }
             var logArray = [];
             var logObject = $.extend(true, {}, this.log);
             var options = this.options;
             if (sectionNum == null) {
-                $.each(logObject.sections, function (index, value) {
+                $.each(logObject.sections, function(index, value) {
                     if (logObject.firstLineTitle){
                         switch(options.format) {
                             case "html":
@@ -829,12 +878,12 @@
             }
             return logArray;
         },
-        value: function (sectionNum) {
+        value: function(sectionNum) {
             if (debug) { console.log('value'); }
             return this.toArray(sectionNum).join('\n');
         },
-        logObj: function () {
+        logObj: function() {
             return this.log;
         }
     });
-})( jQuery, window, document );
+})(jQuery, window, document);
