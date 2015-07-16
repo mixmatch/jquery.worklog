@@ -26,25 +26,25 @@ options: {
 ```
 
 #Methods
-refresh
-addSection
-refreshSection
-refreshSectionBar
-findLineInSection
-findLine
-addLine
-setLine
-setCurrentLine
-replace
-replaceLine
-removeLine
-toArray
-value
-logObj
+- refresh
+- addSection
+- refreshSection
+- refreshSectionBar
+- findLineInSection
+- findLine
+- addLine
+- setLine
+- setCurrentLine
+- replace
+- replaceLine
+- removeLine
+- toArray
+- value
+- logObj
 
 #Events
-edit
-change
+- edit
+- change
 
 # Dependencies
 - jQuery
