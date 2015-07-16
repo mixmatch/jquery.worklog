@@ -2,7 +2,7 @@
 contentEditable Divs + Auto Suggest
 Generates a work log element using conentEditable div elements, with autosuggest and automatic growth based on contact. Supports HTML and plain text formatting of headers.
 
-#Options
+# Options
 Defaults:
 ```javascript
 options: {
@@ -25,7 +25,7 @@ options: {
 }
 ```
 
-#Methods
+# Methods
 - refresh
 - addSection
 - refreshSection
@@ -42,7 +42,7 @@ options: {
 - value
 - logObj
 
-#Events
+# Events
 - edit
 - change
 
@@ -50,7 +50,7 @@ options: {
 - jQuery
 - jQuery UI
 
-#License
+# License
 This is free and unencumbered software released into the public domain.
 
 Anyone is free to copy, modify, publish, use, compile, sell, or
