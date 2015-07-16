@@ -364,7 +364,7 @@
         if (logObject.sig != null) {
           base.$worklogBody.append($('<div>', {
             id: base.nameSpace + 'sig',
-            'class': this.nameSpace + ' editable sig',
+            'class': this.nameSpace + ' sig' + (base.options.editable ? ' editable': ''),
             contentEditable: base.options.editable
           }).html('<b>' + logObject.sig + '</b>'));
         }
@@ -528,7 +528,7 @@
           case 'html':
             var titleString = value.shift();
             $title = $('<div>', {
-              'class': this.nameSpace + ' editable title',
+              'class': this.nameSpace + ' title' + (this.options.editable ? ' editable': ''),
               contentEditable: this.options.editable
             }).append(this._formatTitleHTML(titleString, options.title));
             if ($('.sig').length) {
@@ -550,7 +550,7 @@
           }
         });
         var $section = $('<div>', {
-          'class': this.nameSpace + ' editable autosuggest section',
+          'class': this.nameSpace + ' autosuggest section' + (this.options.editable ? ' editable': ''),
           contentEditable: this.options.editable,
           css: {
             overflow: 'hidden',
@@ -566,7 +566,11 @@
         if (options.autoSuggest) {
           this._addAutoSuggest($section);
         }
-        this.refreshSectionBar(index);
+        if (this.options.editable) {
+          this.refreshSectionBar(index);
+        } else {
+          $('#' + this.nameSpace + 'section' + index + 'bar').hide();
+        }
       }
     },
     refreshSection: function(sectionNum) {
