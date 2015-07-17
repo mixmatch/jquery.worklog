@@ -12,22 +12,22 @@
     //Options to be used as defaults
     options: {
       // These are the defaults.
-      width: '650px',
-      height: '200px',
-      background: '#FFF',
-      format: 'plain',
-      title: {
-        color: '#000',
-        bold: true,
-        underline: true,
-        italics: false
+      width: "650px", //CSS width
+      height: "200px", //CSS height
+      background: "#FFF",//CSS background
+      format: "plain", //plain or html
+      title: { //Section title formatting
+          color: "#000",
+          bold: true,
+          underline: true,
+          italics: false
       },
       fixMinHeight: false,
-      template: false,
-      autoSuggest: false,
-      autoFocus: false,
-      suggestLength: 24,
-      editable: true
+      template: false, //Log template to load
+      autoSuggest: false, //Add Autosuggest
+      autoFocus: false, //If set to true the first item will automatically be focused when the menu is shown.
+      suggestLength: 24, //Number of values in autosuggest list
+      editable: true //Is worklog editable?
     },
     _create: function() {
       //            if (debug) { console.log("_create"); }
