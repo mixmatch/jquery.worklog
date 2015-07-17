@@ -147,9 +147,6 @@
         var lineHeight = parseInt($(elem).css('height'), 10) / (tArray.length || 1);
         var autocompletePos;
         if (position !== this.currentLine || this.showSuggest) {
-          //                    if (debug) console.log(lineHeight);
-          //                    if (debug) console.log(position);
-          //                    if (debug) console.log(tArray[position]);
           autocompletePos = parseInt($(elem).css('padding-top'), 10) + ((position + 1) * lineHeight);
           $(elem).autocomplete('option', 'position', {
             my: 'right top',
@@ -610,9 +607,7 @@
       }
     },
     removeSection: function(sectionNum) {
-      console.log('Removing section ' + sectionNum);
       this.log.sections.splice(sectionNum, 1);
-      console.log(this.log);
       if (this.log.firstLineTitle && this.options.format === 'html'){
         $('.title')[sectionNum].remove();
       }
@@ -847,7 +842,7 @@
       }
       if (sectionLength > 1) {
         this.log.sections[sectionNum].splice(index, 1);
-      } else if (this.options.format === "plain") {
+      } else if (!this.log.firstLineTitle || this.options.format === "plain") {
         this.removeSection(sectionNum);
       } else {
         this.log.sections[sectionNum][index] = '';
