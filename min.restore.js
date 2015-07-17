@@ -108,6 +108,7 @@
         return false;
       }
     },
+    // http://stackoverflow.com/questions/4811822/get-a-ranges-start-and-end-offsets-relative-to-its-parent-container
     _getCaretOffsetHTML: function(element) {
       var caretOffset = 0;
       var doc = element.ownerDocument || element.document;
@@ -162,25 +163,50 @@
     },
     _upKey: function(event, base) {
       event.stopImmediatePropagation();
-      var c, e, f;
-      if (0 === base.currentLine || null == base.currentLine) {
-        if (c = window.getSelection(), e = document.createRange(), c.getRangeAt(0), c = c.getRangeAt(0).startOffset, f = base._prevEditable.apply(base, [base.focusedElem])) f.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)'), f = f.hasClass('section') ? f.contents().last()[0] : window.getSelection().getRangeAt(0).startContainer, e.setStart(f, Math.min(c, f.length)), e.collapse(true), setTimeout(function() {
-          var selection = window.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(e);
-        }, 1);
+      var selection, range, offset, previous, domNode;
+      if (base.currentLine === 0 || base.currentLine == null) {
+        selection = window.getSelection();
+        range = document.createRange();
+        offset = selection.getRangeAt(0).startOffset;
+        previous = base._prevEditable.apply(base, [base.focusedElem]);
+        if (previous) {
+          previous.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
+          if (previous.hasClass('section')) {
+            domNode = previous.contents().last()[0];
+          } else {
+            domNode = window.getSelection().getRangeAt(0).startContainer;
+          }
+          range.setStart(domNode, Math.min(offset, domNode.length));
+          range.collapse(true);
+          setTimeout(function() {
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }, 1);
+        }
       }
     },
     _downKey: function(event, base) {
       event.stopImmediatePropagation();
-      var d, e, f;
-      d = $(base.focusedElem).html().replace(/(.*)<br>$/i, '$1').split('<br>').length - 1;
-      if (base.currentLine === d || null == base.currentLine) {
-        if (d = window.getSelection(), e = document.createRange(), d.getRangeAt(0), d = d.getRangeAt(0).startOffset, f = base._nextEditable.apply(base, [base.focusedElem])) f.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)'), f = window.getSelection().getRangeAt(0).startContainer, e.setStart(f, Math.min(d, f.length)), e.collapse(true), setTimeout(function() {
-          var selection = window.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(e);
-        }, 1);
+      var lastLine, selection, range, offset, next, domNode;
+      lastLine = $(base.focusedElem).html().replace(/(.*)<br>$/i, '$1').split('<br>').length - 1;
+      if (base.currentLine === lastLine || base.currentLine == null) {
+        selection = window.getSelection();
+        range = document.createRange();
+        selection.getRangeAt(0);
+        offset = selection.getRangeAt(0).startOffset;
+        next = base._nextEditable.apply(base, [base.focusedElem]);
+        if (next) {
+          next.focus().css('background-color', 'rgba( 255, 255, 255, 0.7)');
+          domNode = window.getSelection().getRangeAt(0).startContainer;
+          range.setStart(domNode, Math.min(offset, domNode.length));
+          range.collapse(true);
+          setTimeout(function() {
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }, 1);
+        }
       }
     },
     _addAutoSuggest: function($section) {
