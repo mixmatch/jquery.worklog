@@ -15,7 +15,7 @@
       width: "650px", //CSS width
       height: "200px", //CSS height
       background: "#FFF",//CSS background
-      format: "plain", //plain or html
+      format: "plain", // html, plain, textarea
       title: { //Section title formatting
           color: "#000",
           bold: true,
@@ -484,14 +484,8 @@
         }
       }).on('click', '.ui-icon-trash', function(event) {
         event.stopImmediatePropagation();
-        logObject = $('.title').index($(this).parent());
-        console.log(logObject);
-        base.log.sections.splice(logObject, 1);
-        console.log(base.log);
-        $(this).parent().next().next().next().remove();
-        $(this).parent().next().next().remove();
-        $(this).parent().next().remove();
-        $(this).parent().remove();
+        sectionNum = $('.title').index($(this).parent());
+        base.removeSection(sectionNum);
       });
     },
     _formatTitleHTML: function(text, formatting) {
@@ -568,22 +562,38 @@
         }
       }
       if (value.length) {
-        var $sectionBar = $('<div>', {
-          'class': this.nameSpace + ' sectionBar',
-          css: {
-            'float': 'left',
-            width: '13px'
-          }
-        });
-        var $section = $('<div>', {
-          'class': this.nameSpace + ' autosuggest section' + (this.options.editable ? ' editable': ''),
-          contentEditable: this.options.editable,
-          css: {
-            overflow: 'hidden',
-            'white-space': 'pre'
-          },
-          html: value.join('<br>') + '<br>'
-        });
+        switch (options.format) {
+          case 'html':
+          case 'plain':
+            var $sectionBar = $('<div>', {
+              'class': this.nameSpace + ' sectionBar',
+              css: {
+                'float': 'left',
+                width: '13px'
+              }
+            });
+            var $section = $('<div>', {
+              'class': this.nameSpace + ' autosuggest section' + (this.options.editable ? ' editable': ''),
+              contentEditable: this.options.editable,
+              css: {
+                overflow: 'hidden',
+                'white-space': 'pre'
+              },
+              html: value.join('<br>') + '<br>'
+            });
+            break;
+          case 'textarea':
+            var $sectionBar = $('<div>');
+            var $section = $('<textarea>', {
+              'class': this.nameSpace,
+              css: {
+                overflow: 'hidden',
+                'white-space': 'pre'
+              },
+              html: value.join('\n') + '\n'
+            });
+            break;
+        }
         if ($('.sig').length) {
           $('.sig').before($sectionBar).before($section).before('<br>');
         } else {
@@ -599,10 +609,24 @@
         }
       }
     },
+    removeSection: function(sectionNum) {
+      console.log('Removing section ' + sectionNum);
+      this.log.sections.splice(sectionNum, 1);
+      console.log(this.log);
+      if (this.log.firstLineTitle && this.options.format === 'html'){
+        $('.title')[sectionNum].remove();
+      }
+      $($('.section')[sectionNum]).next().remove();
+      $('.section')[sectionNum].remove();
+      $('.sectionBar')[sectionNum].remove();
+    },
     refreshSection: function(sectionNum) {
       var logObj = $.extend(true, {}, this.log);
       var section = logObj.sections[sectionNum];
       var options = this.options;
+      if (!section){
+        return false;
+      }
       if (logObj.firstLineTitle) {
         switch (options.format) {
           case 'html':
@@ -635,7 +659,7 @@
       var section = logObj.sections[sectionNum];
       $('.sectionBar:eq(' + sectionNum + ')').html('');
       sectionLength = section.length;
-      if (logObj.firstLineTitle) {
+      if (logObj.firstLineTitle && this.options.format === 'html') {
         sectionLength--;
       }
       var lineHeight = parseInt($('.section:eq(' + sectionNum + ')').css('height'), 10) / sectionLength;
@@ -817,12 +841,14 @@
         console.log(index);
       }
       var sectionLength = this.log.sections[sectionNum].length;
-      if (this.log.firstLineTitle) {
+      if (this.log.firstLineTitle && this.options.format === 'html') {
         index++;
         sectionLength--;
       }
       if (sectionLength > 1) {
         this.log.sections[sectionNum].splice(index, 1);
+      } else if (this.options.format === "plain") {
+        this.removeSection(sectionNum);
       } else {
         this.log.sections[sectionNum][index] = '';
       }

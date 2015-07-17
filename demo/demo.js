@@ -6,7 +6,7 @@ $(document).ready(function () {
         width: "100%",
         height: "100%",
         background: "rgba(255,255,255,0.8)",
-        format: "html",
+        format: "html", // html, plain, textarea
         title: {
             color: "#557799",
             bold: true,
