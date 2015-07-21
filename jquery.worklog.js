@@ -211,10 +211,16 @@
       var options = this.options;
       $($section).keydown(function(event) {
         var keyCode = $.ui.keyCode;
-        if (event.keyCode == keyCode.UP) {
-          base._upKey(event, base);
-        } else if (event.keyCode == keyCode.DOWN) {
-          base._downKey(event, base);
+        if (!options.autoFocus) {
+          if (event.keyCode == keyCode.UP) {
+            base._upKey(event, base);
+          } else if (event.keyCode == keyCode.DOWN) {
+            base._downKey(event, base);
+          }
+        } else if ($('.ui-autocomplete:visible').length && event.keyCode == keyCode.ENTER) {
+          event.preventDefault();
+          event.stopPropagation();
+          return false;
         }
       }).autocomplete({
         source: function(request, response) {
@@ -271,11 +277,25 @@
       var base = this;
       var templateHtml = '';
       var log = this.log || this.options.template;
+      var options = this.options;
+      if (options.format === 'textarea'){
+        console.log(log.sections);
+        var merged = [];
+        $.each(log.sections, function(index, value) {
+          merged = merged.concat(value);
+          if (index + 1 !== log.sections.length){
+            merged = merged.concat('');
+          }
+        });
+        log.sections = [merged];
+        // logObject.sections = [logObject.sections.join('\n\n')];
+        console.log(log);
+      }
       var logObject = $.extend(true, {}, log);
       if (debug) {
+        console.log(this);
         console.log(logObject);
       }
-      var options = this.options;
       if (logObject) {
         this.$element.css({
           width: options.width,
@@ -319,7 +339,28 @@
           css: {
             'float': 'right'
           }
-        }).append($('<input>', {
+        }).append($('<select>', {
+          id: this.nameSpace + 'format',
+          css: {
+            'margin-right': '5px',
+            'vertical-align': 'middle',
+            border: '0px',
+            height: '16px'
+          },
+          html: '<option value="html">HTML</option><option value="plain">Plain text</option><option value="textarea">Text box</option>',
+          change: function() {
+            if (options.format === 'textarea'){
+              base.log.sections = base.value(0).split(/\n\n\b/);
+              $.each(base.log.sections, function(index, value) {
+                base.log.sections[index] = value.split('\n');
+              });
+            }
+            options.format = $(this).val();
+            base.refresh();
+            // base.options.title.bold = $(this).is(':checked');
+            // base._setTitleFormat.apply(base);
+          }
+        })).append($('<input>', {
           id: this.nameSpace + 'boldCheck',
           checked: options.title.bold,
           type: 'checkbox',
@@ -370,6 +411,7 @@
           id: this.nameSpace + 'body'
         }));
         $('#' + this.nameSpace + 'addSectionBtn').button();
+        $('#' + this.nameSpace + 'format').val(options.format);
         $('.ui-button', '#' + this.nameSpace + 'header')
           .not(':contains("Add Section")').css({
             height: '14px',
@@ -397,29 +439,35 @@
         var section;
         var currentSelection;
         var lastLine;
-        if (event.keyCode == keyCode.UP) {
-          base._upKey(event, base);
-        } else if (event.keyCode == keyCode.DOWN) {
-          base._downKey(event, base);
-        } else if (event.keyCode == keyCode.ENTER) {
-          event.stopImmediatePropagation();
-          if ($(this).hasClass('section')) {
-            section = $('.section').index($(this));
-            if (base.log.firstLineTitle) {
-              lastLine = base.log.sections[section].length - 2;
-            } else {
-              lastLine = base.log.sections[section].length - 1;
+        console.log ($('.ui-autocomplete:visible').length);
+        console.log (options.autoFocus);
+        if ($('.ui-autocomplete:visible').length && options.autoFocus){
+          
+        } else {
+          if (event.keyCode == keyCode.UP) {
+            base._upKey(event, base);
+          } else if (event.keyCode == keyCode.DOWN) {
+            base._downKey(event, base);
+          } else if (event.keyCode == keyCode.ENTER) {
+            event.stopImmediatePropagation();
+            if ($(this).hasClass('section')) {
+              section = $('.section').index($(this));
+              if (base.log.firstLineTitle) {
+                lastLine = base.log.sections[section].length - 2;
+              } else {
+                lastLine = base.log.sections[section].length - 1;
+              }
+              if (base.currentLine !== lastLine) {
+                document.execCommand('insertHTML', false, '<br><br>');
+                currentSelection = window.getSelection();
+                currentSelection.modify('move', 'backward', 'line');
+              } else {
+                document.execCommand('insertHTML', false, '<br><br>');
+              }
             }
-            if (base.currentLine !== lastLine) {
-              document.execCommand('insertHTML', false, '<br><br>');
-              currentSelection = window.getSelection();
-              currentSelection.modify('move', 'backward', 'line');
-            } else {
-              document.execCommand('insertHTML', false, '<br><br>');
-            }
-          }
-          return false;
-         }
+            return false;
+           }
+        }
       }).on('paste', '.editable', function(event) {
         var origE = event.originalEvent;
         var pasteData;
@@ -452,17 +500,17 @@
         base.showSuggest = true;
         base._trigger('change');
         base._trigger('edit');
-      }).on('mouseenter mouseleave', '.editable', function(event) {
+      }).on('mouseenter mouseleave', '.editable, textarea', function(event) {
         if (event.type === 'mouseenter') {
           $(this).css('background-color', 'rgba( 255, 255, 255, 0.7)');
-        } else {
+        } else if (this != base.focusedElem){
           $(this).css('background-color', 'transparent');
         }
-      }).on('focus', '.editable', function() {
+      }).on('focus', '.editable, textarea', function() {
         base.showSuggest = false;
         $(this).css('background-color', 'rgba( 255, 255, 255, 0.7)');
         base.focusedElem = this;
-      }).on('blur', '.editable', function() {
+      }).on('blur', '.editable, textarea', function() {
         $(this).css('background-color', 'transparent');
         base.currentLine = null;
         base.focusedElem = null;
@@ -483,6 +531,10 @@
         event.stopImmediatePropagation();
         sectionNum = $('.title').index($(this).parent());
         base.removeSection(sectionNum);
+      }).on('input', 'textarea', function(event) {
+        base.log.sections[0] = $(this).val().split("\n");
+        $(this).height( 0 );
+        $(this).height( $(this).prop('scrollHeight') - 4 );
       });
     },
     _formatTitleHTML: function(text, formatting) {
@@ -582,12 +634,16 @@
           case 'textarea':
             var $sectionBar = $('<div>');
             var $section = $('<textarea>', {
-              'class': this.nameSpace,
+              'class': this.nameSpace + ' section',
               css: {
                 overflow: 'hidden',
-                'white-space': 'pre'
+                'white-space': 'pre',
+                height: 'auto',
+                width: '99%',
+                border: 'none',
+                'background-color': 'transparent'
               },
-              html: value.join('\n') + '\n'
+              html: value.join('\n')
             });
             break;
         }
@@ -596,7 +652,14 @@
         } else {
           this.$worklogBody.append($sectionBar).append($section).append('<br>');
         }
-        if (options.autoSuggest) {
+        if (options.format === 'textarea'){
+          $section.height( $section.prop('scrollHeight') - 4 );
+          setTimeout(function (){
+            $section.height( $section.prop('scrollHeight') - 4 );
+          }, 1000);
+          
+        }
+        if (options.autoSuggest && options.format !== 'textarea') {
           this._addAutoSuggest($section);
         }
         if (this.options.editable) {
@@ -618,6 +681,7 @@
     refreshSection: function(sectionNum) {
       var logObj = $.extend(true, {}, this.log);
       var section = logObj.sections[sectionNum];
+      var $elem;
       var options = this.options;
       if (!section){
         return false;
@@ -634,9 +698,14 @@
         }
       }
       if (section.length) {
-        $('.section:eq(' + sectionNum + ')')
-          .html(section.join('<br>') + '<br>');
-        this.refreshSectionBar(sectionNum);
+        $elem = $('.section:eq(' + sectionNum + ')');
+        if (options.format !== 'textarea'){
+          $elem.html(section.join('<br>') + '<br>');
+          this.refreshSectionBar(sectionNum);
+        } else {
+          $elem.val(section.join('\n'));
+          $elem.height( $elem.prop('scrollHeight') - 4 );
+        }
       }
     },
     refreshSectionBar: function(sectionNum) {
